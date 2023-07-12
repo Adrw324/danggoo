@@ -19,8 +19,8 @@ class _TabletAppState extends State<TabletApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Tablet App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData.dark(
+       
       ),
       home: TabletHomePage(),
       routes: {
@@ -235,7 +235,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
                   (widget.playerCount / 2).ceil(),
-                  (index) => _buildPlayerSection(index),
+                  (index) => _buildPlayerSection(index, widget.playerCount),
                 ),
               ),
             ),
@@ -297,7 +297,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
                   (widget.playerCount / 2).floor(),
-                  (index) => _buildPlayerSection(index + (widget.playerCount / 2).ceil()),
+                  (index) => _buildPlayerSection(index + (widget.playerCount / 2).ceil(), widget.playerCount),
                 ),
               ),
             ),
@@ -307,8 +307,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     );
   }
 
-  Widget _buildPlayerSection(int index) {
+  Widget _buildPlayerSection(int index, int playerCount) {
   return Container(
+    height: MediaQuery.of(context).size.height / 4.5,
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
       border: Border.all(color: Colors.black),
@@ -316,39 +317,66 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Player ${index + 1}',
-          style: TextStyle(fontSize: 20),
+        Expanded(
+          flex:1,
+          child: 
+            Text(
+              'Player ${index + 1}',
+              style: TextStyle(fontSize: 20),
+            ),
         ),
-        Text(
-          'Count: ${buttonCounts[index]}',
-          style: TextStyle(fontSize: 20),
+        Expanded(
+          flex:3,
+          child: 
+          GestureDetector(
+            onTap: () => incrementButtonCountBy(index, 1),
+            child: 
+              Container(
+                margin:EdgeInsets.all(10),
+                child: Center (
+                  
+                  child: Text(
+                  '${buttonCounts[index]}',
+                  style: 
+                    TextStyle(
+                      fontSize: 80,
+                    ),
+                    ),
+                ),
+              ), 
+            ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton(
-              onPressed: () => incrementButtonCountBy(index, 1),
-              child: Text('+1'),
-            ),
-            ElevatedButton(
-              onPressed: () => incrementButtonCountBy(index, 2),
-              child: Text('+2'),
-            ),
-            ElevatedButton(
-              onPressed: () => incrementButtonCountBy(index, 3),
-              child: Text('+3'),
-            ),
-            ElevatedButton(
-              onPressed: () => incrementButtonCountBy(index, 5),
-              child: Text('+5'),
-            ),
-            ElevatedButton(
-              onPressed: () => decrementButtonCount(index),
-              child: Text('-1'),
-            ),
-            
-          ],
+      
+        Expanded(
+          flex:1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => decrementButtonCount(index),
+                    child: Text('-1'),
+                    style: TextButton.styleFrom(backgroundColor: Colors.orange),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => incrementButtonCountBy(index, 2),
+                    child: Text('+2'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => incrementButtonCountBy(index, 3),
+                    child: Text('+3'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => incrementButtonCountBy(index, 5),
+                    child: Text('+5'),
+                  ),],
+              ),
+              
+              
+              
+            ],
+          ),
         ),
       ],
     ),
