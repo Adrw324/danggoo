@@ -1,30 +1,32 @@
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+
 
 void main() {
   runApp(TabletApp());
 }
 
 class TabletApp extends StatefulWidget {
- 
   @override
   State<TabletApp> createState() => _TabletAppState();
 }
 
 class _TabletAppState extends State<TabletApp> {
-   int tabletNumber = 1;
+  int tabletNumber = 1;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Tablet App',
-      theme: ThemeData.dark(
-       
-      ),
+      theme: ThemeData.dark(),
       home: TabletHomePage(),
       routes: {
-        '/quickStart': (context) => QuickStartScreen(playerCount: 2, tabletNumber: tabletNumber,),
+        '/quickStart': (context) => QuickStartScreen(
+              playerCount: 2,
+              tabletNumber: tabletNumber,
+            ),
         '/setting': (context) => SettingScreen(
               tabletNumber: tabletNumber,
               onTabletNumberChanged: (newTabletNumber) {
@@ -116,12 +118,14 @@ class TabletHomePage extends StatelessWidget {
     );
 
     if (count != null) {
-      final _TabletAppState tabletAppState = context.findAncestorStateOfType<_TabletAppState>()!;
+      final _TabletAppState tabletAppState =
+          context.findAncestorStateOfType<_TabletAppState>()!;
       final int tabletNumber = tabletAppState.tabletNumber;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => QuickStartScreen(playerCount: count, tabletNumber: tabletNumber),
+          builder: (context) =>
+              QuickStartScreen(playerCount: count, tabletNumber: tabletNumber),
         ),
       );
     }
@@ -131,6 +135,8 @@ class TabletHomePage extends StatelessWidget {
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
   final int tabletNumber;
+  final player = AudioPlayer();
+  
 
   QuickStartScreen({required this.playerCount, required this.tabletNumber});
 
@@ -144,6 +150,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   int timerSeconds = 0;
   String formattedTime = '00:00:00';
   List<int> buttonCounts = [];
+  
+
 
   @override
   void initState() {
@@ -227,6 +235,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       body: Row(
         children: [
           Expanded(
+            flex: 2,
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.black),
@@ -241,6 +250,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             ),
           ),
           Expanded(
+            flex: 4,
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.black),
@@ -250,13 +260,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Timer',
-                      style: TextStyle(fontSize: 24),
+                      'Playtime',
+                      style: TextStyle(fontSize: 60),
                     ),
                     SizedBox(height: 16),
                     Text(
                       formattedTime,
-                      style: TextStyle(fontSize: 40),
+                      style: TextStyle(fontSize: 60),
                     ),
                     SizedBox(height: 16),
                     Row(
@@ -268,20 +278,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                         ),
                         SizedBox(width: 16),
                         ElevatedButton(
-                          onPressed: stopTimer,
-                          child: Text('Stop'),
-                        ),
-                        SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: resetTimer,
-                          child: Text('Reset'),
+                          onPressed: finishGame, // Finish 버튼 클릭 시 데이터 전송
+                          child: Text('Finish'),
                         ),
                       ],
-                    ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: finishGame, // Finish 버튼 클릭 시 데이터 전송
-                      child: Text('Finish'),
                     ),
                   ],
                 ),
@@ -289,6 +289,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             ),
           ),
           Expanded(
+            flex: 2,
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.black),
@@ -297,7 +298,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
                   (widget.playerCount / 2).floor(),
-                  (index) => _buildPlayerSection(index + (widget.playerCount / 2).ceil(), widget.playerCount),
+                  (index) => _buildPlayerSection(
+                      index + (widget.playerCount / 2).ceil(),
+                      widget.playerCount),
                 ),
               ),
             ),
@@ -308,82 +311,123 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Widget _buildPlayerSection(int index, int playerCount) {
-  return Container(
-    height: MediaQuery.of(context).size.height / 4.5,
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.black),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          flex:1,
-          child: 
-            Text(
-              'Player ${index + 1}',
-              style: TextStyle(fontSize: 20),
-            ),
-        ),
-        Expanded(
-          flex:3,
-          child: 
-          GestureDetector(
-            onTap: () => incrementButtonCountBy(index, 1),
-            child: 
-              Container(
-                margin:EdgeInsets.all(10),
-                child: Center (
-                  
-                  child: Text(
-                  '${buttonCounts[index]}',
-                  style: 
-                    TextStyle(
-                      fontSize: 80,
-                    ),
-                    ),
-                ),
-              ), 
-            ),
-        ),
-      
-        Expanded(
-          flex:1,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: () => decrementButtonCount(index),
-                    child: Text('-1'),
-                    style: TextButton.styleFrom(backgroundColor: Colors.orange),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => incrementButtonCountBy(index, 2),
-                    child: Text('+2'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => incrementButtonCountBy(index, 3),
-                    child: Text('+3'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => incrementButtonCountBy(index, 5),
-                    child: Text('+5'),
-                  ),],
+    return Container(
+      height: MediaQuery.of(context).size.height / 4.3,
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            flex:1,
+            child: Container(
+              child: Text(
+                'Player ${index + 1}',
+                style: TextStyle(fontSize: 16),
               ),
-              
-              
-              
-            ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          Expanded(
+            flex:6,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: OutlinedButton(
+                            onPressed: () => incrementButtonCountBy(index, 2),
+                            
+                            
+                            child: Text('+2'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: OutlinedButton(
+                            onPressed: () => incrementButtonCountBy(index, 3),
+                            child: Text('+3'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  child: AspectRatio(
+                      aspectRatio: 1,
+                      child: OutlinedButton(
+                        onPressed: () => incrementButtonCountBy(index, 1),
+                        child: Text(
+                          '${buttonCounts[index]}',
+                          style: TextStyle(fontSize: 80, color: Colors.white),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                            side: BorderSide(width: 3.0, color: Colors.white)),
+                      )),
+                ),
+                Column(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: OutlinedButton(
+                            onPressed: () => incrementButtonCountBy(index, 5),
+                            child: Text('+5'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: OutlinedButton(
+                            onPressed: () => decrementButtonCount(index),
+                            child: Text('-1'),
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.orange,  side: BorderSide(width: 1.0, color: Colors.orange)),
+                                
+                             
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-void sendGameDataToServer(int playTime, int tabletNumber) {
+  void sendGameDataToServer(int playTime, int tabletNumber) {
     // playTime(플레이 시간)과 tabletNumber(테이블 번호)를 서버로 전송하는 로직을 구현해야 합니다.
     // 이 부분은 실제 서버와의 통신 코드로 대체되어야 합니다.
     print('Sending game data to server...');
@@ -391,37 +435,35 @@ void sendGameDataToServer(int playTime, int tabletNumber) {
     print('Tablet Number: $tabletNumber');
     // 서버로 데이터 전송하는 함수 호출
   }
-
 }
 
-
 void sendTimerDataToServer(int elapsedSeconds) async {
-    String url = 'https://your-server-url.com/endpoint'; // 서버의 엔드포인트 URL로 변경해주세요
-    Map<String, dynamic> data = {
-      'elapsed_seconds': elapsedSeconds,
-    };
+  String url = 'https://your-server-url.com/endpoint'; // 서버의 엔드포인트 URL로 변경해주세요
+  Map<String, dynamic> data = {
+    'elapsed_seconds': elapsedSeconds,
+  };
 
-    try {
-      var response = await http.post(Uri.parse(url), body: data);
-      if (response.statusCode == 200) {
-        // 전송 성공
-        print('Timer data sent to server successfully');
-      } else {
-        // 전송 실패
-        print('Failed to send timer data to server');
-      }
-    } catch (e) {
-      // 에러 처리
-      print('Error: $e');
+  try {
+    var response = await http.post(Uri.parse(url), body: data);
+    if (response.statusCode == 200) {
+      // 전송 성공
+      print('Timer data sent to server successfully');
+    } else {
+      // 전송 실패
+      print('Failed to send timer data to server');
     }
+  } catch (e) {
+    // 에러 처리
+    print('Error: $e');
+  }
 }
 
 class SettingScreen extends StatefulWidget {
-
   final int tabletNumber;
   final Function(int) onTabletNumberChanged;
 
-  SettingScreen({required this.tabletNumber, required this.onTabletNumberChanged});
+  SettingScreen(
+      {required this.tabletNumber, required this.onTabletNumberChanged});
 
   @override
   _SettingScreenState createState() => _SettingScreenState();
@@ -470,6 +512,7 @@ class _SettingScreenState extends State<SettingScreen> {
       ),
     );
   }
+
   void _sendDataToServer() {
     // 데이터 서버로 전송하는 로직 구현
     // tabletNumber와 게임 플레이 시간 등의 데이터를 서버로 전송
