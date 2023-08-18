@@ -1,8 +1,69 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+// import 'package:audioplayers/audioplayers.dart';
 
+class Game {
+  final int tableNum;
+  final String date;
+  final String start;
+  final String end;
+  final int playtime;
+  final double fee;
+  final bool finished;
+
+  Game(
+      {required this.tableNum,
+      required this.start,
+      required this.end,
+      required this.playtime,
+      required this.fee,
+      required this.finished,
+      required this.date});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'Table_Num': tableNum,
+      'Date': date,
+      'Start': start,
+      'End': end,
+      'Playtime': playtime,
+      'Fee': fee,
+      'Finished': finished
+    };
+  }
+}
+
+class GameDataSender {
+  final String serverUrl = 'localhost:5157'; // 서버의 URL로 변경해주세요
+
+  Future<void> sendGameData(Game game) async {
+    final apiUrl = Uri.http('$serverUrl', '/Games/Receive');
+    final headers = {
+      'Content-Type': 'application/json',
+      "Access-Control_Allow_Origin": "*",
+      'Accept': '*/*'
+    };
+    final gameData = game.toJson();
+
+    try {
+      final response = await http.post(
+        apiUrl,
+        headers: headers,
+        body: jsonEncode(gameData),
+      );
+
+      if (response.statusCode == 200) {
+        print('Game data sent successfully');
+      } else {
+        print('Failed to send game data');
+      }
+    } catch (e) {
+      print('Error sending game data: $e');
+    }
+  }
+}
 
 void main() {
   runApp(TabletApp());
@@ -19,7 +80,7 @@ class _TabletAppState extends State<TabletApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tablet App',
+      title: 'Nice Q',
       theme: ThemeData.dark(),
       home: TabletHomePage(),
       routes: {
@@ -45,7 +106,7 @@ class TabletHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tablet App'),
+        title: Text('Nice Q'),
       ),
       drawer: Drawer(
         child: ListView(
@@ -87,13 +148,42 @@ class TabletHomePage extends StatelessWidget {
         ),
       ),
       body: Center(
-        child: Text(
-          'Welcome to Tablet App!',
-          style: TextStyle(fontSize: 24),
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(context, '/quickStart');
+          },
+          child: Container(
+            width: 200,
+            height: 200,
+            child: Center(
+              child: Text(
+                'Quick Start',
+                style: TextStyle(fontSize: 24, color: Colors.white),
+              ),
+            ),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 2), // 하얀 테두리 추가
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  // void _showQuickStart(BuildContext context) {
+  //   final _TabletAppState tabletAppState =
+  //       context.findAncestorStateOfType<_TabletAppState>()!;
+  //   final int tabletNumber = tabletAppState.tabletNumber;
+
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) =>
+  //           QuickStartScreen(playerCount: 2, tabletNumber: tabletNumber),
+  //     ),
+  //   );
+  // }
 
   Future<void> _showPlayerCountDialog(BuildContext context) async {
     final int? count = await showDialog<int>(
@@ -135,8 +225,6 @@ class TabletHomePage extends StatelessWidget {
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
   final int tabletNumber;
-  final player = AudioPlayer();
-  
 
   QuickStartScreen({required this.playerCount, required this.tabletNumber});
 
@@ -150,8 +238,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   int timerSeconds = 0;
   String formattedTime = '00:00:00';
   List<int> buttonCounts = [];
-  
-
+  DateTime gameStartTime = DateTime.now();
 
   @override
   void initState() {
@@ -164,6 +251,113 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   void dispose() {
     _timer.cancel();
     super.dispose();
+  }
+
+  void startGame() {
+    if (isTimerRunning) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Start Game'),
+          content: Text('Are you sure you want to start the game?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                _startGameConfirmed();
+              },
+              child: Text('Confirm'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _startGameConfirmed() {
+    DateTime today = DateTime.now();
+    gameStartTime = DateTime.now();
+
+    Game game = Game(
+      tableNum: 1,
+      date: today.toIso8601String(),
+      start: gameStartTime.toIso8601String(),
+      end: gameStartTime.toIso8601String(),
+      playtime: 0,
+      fee: 0,
+      finished: false,
+    );
+
+    GameDataSender gameDataSender = GameDataSender();
+    gameDataSender.sendGameData(game);
+
+    startTimer();
+  }
+
+  void finishGame() {
+    if (!isTimerRunning) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Finish Game'),
+          content: Text('Are you sure you want to finish the game?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                _finishGameConfirmed();
+              },
+              child: Text('Confirm'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _finishGameConfirmed() {
+    DateTime today = DateTime.now();
+    DateTime end = DateTime.now();
+
+    Duration timeDifference = end.difference(gameStartTime);
+
+    int minutesDifference = timeDifference.inMinutes;
+
+    Game game = Game(
+      tableNum: 1,
+      date: today.toIso8601String(),
+      start: gameStartTime.toIso8601String(),
+      end: end.toIso8601String(),
+      playtime: minutesDifference,
+      fee: minutesDifference * 30 / 60,
+      finished: true,
+    );
+
+    GameDataSender gameDataSender = GameDataSender();
+    gameDataSender.sendGameData(game);
+
+    finish();
+    Navigator.pop(context);
   }
 
   void startTimer() {
@@ -196,6 +390,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     });
   }
 
+  void finish() {
+    if (isTimerRunning) {
+      stopTimer();
+    }
+  }
+
   String _formatTime(int seconds) {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
@@ -215,15 +415,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         buttonCounts[index]--;
       });
     }
-  }
-
-  void finishGame() {
-    if (isTimerRunning) {
-      stopTimer();
-    }
-
-    // 서버로 데이터 전송
-    sendGameDataToServer(timerSeconds, widget.tabletNumber);
   }
 
   @override
@@ -273,7 +464,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ElevatedButton(
-                          onPressed: startTimer,
+                          onPressed: startGame,
                           child: Text('Start'),
                         ),
                         SizedBox(width: 16),
@@ -320,7 +511,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       child: Column(
         children: [
           Expanded(
-            flex:1,
+            flex: 1,
             child: Container(
               child: Text(
                 'Player ${index + 1}',
@@ -329,14 +520,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             ),
           ),
           Expanded(
-            flex:6,
+            flex: 6,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Column(
                   children: [
                     Expanded(
-                      
                       flex: 1,
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -344,11 +534,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           aspectRatio: 1,
                           child: OutlinedButton(
                             onPressed: () => incrementButtonCountBy(index, 2),
-                            
-                            
                             child: Text('+2'),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                                side:
+                                    BorderSide(width: 1.0, color: Colors.blue)),
                           ),
                         ),
                       ),
@@ -363,7 +552,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             onPressed: () => incrementButtonCountBy(index, 3),
                             child: Text('+3'),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                                side:
+                                    BorderSide(width: 1.0, color: Colors.blue)),
                           ),
                         ),
                       ),
@@ -395,7 +585,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             onPressed: () => incrementButtonCountBy(index, 5),
                             child: Text('+5'),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(width: 1.0, color: Colors.blue)),
+                                side:
+                                    BorderSide(width: 1.0, color: Colors.blue)),
                           ),
                         ),
                       ),
@@ -410,9 +601,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             onPressed: () => decrementButtonCount(index),
                             child: Text('-1'),
                             style: TextButton.styleFrom(
-                                foregroundColor: Colors.orange,  side: BorderSide(width: 1.0, color: Colors.orange)),
-                                
-                             
+                                foregroundColor: Colors.orange,
+                                side: BorderSide(
+                                    width: 1.0, color: Colors.orange)),
                           ),
                         ),
                       ),
@@ -425,36 +616,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         ],
       ),
     );
-  }
-
-  void sendGameDataToServer(int playTime, int tabletNumber) {
-    // playTime(플레이 시간)과 tabletNumber(테이블 번호)를 서버로 전송하는 로직을 구현해야 합니다.
-    // 이 부분은 실제 서버와의 통신 코드로 대체되어야 합니다.
-    print('Sending game data to server...');
-    print('Play Time: $playTime seconds');
-    print('Tablet Number: $tabletNumber');
-    // 서버로 데이터 전송하는 함수 호출
-  }
-}
-
-void sendTimerDataToServer(int elapsedSeconds) async {
-  String url = 'https://your-server-url.com/endpoint'; // 서버의 엔드포인트 URL로 변경해주세요
-  Map<String, dynamic> data = {
-    'elapsed_seconds': elapsedSeconds,
-  };
-
-  try {
-    var response = await http.post(Uri.parse(url), body: data);
-    if (response.statusCode == 200) {
-      // 전송 성공
-      print('Timer data sent to server successfully');
-    } else {
-      // 전송 실패
-      print('Failed to send timer data to server');
-    }
-  } catch (e) {
-    // 에러 처리
-    print('Error: $e');
   }
 }
 
@@ -511,14 +672,5 @@ class _SettingScreenState extends State<SettingScreen> {
         ),
       ),
     );
-  }
-
-  void _sendDataToServer() {
-    // 데이터 서버로 전송하는 로직 구현
-    // tabletNumber와 게임 플레이 시간 등의 데이터를 서버로 전송
-    // 이 부분은 실제 서버와의 통신 코드로 대체되어야 합니다.
-    print('Sending data to server...');
-    print('Tablet Number: $selectedTabletNumber');
-    // 게임 플레이 시간 데이터 등을 서버로 전송하는 함수 호출
   }
 }
