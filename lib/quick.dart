@@ -309,7 +309,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     _ffmpeg = FlutterFFmpeg();
 
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse('output.m3u8'),
+      Uri.parse('/storage/emulated/0/your_directory/output.m3u8'),
     )..initialize().then((_) {
         // Ensure the first frame is shown after the video is initialized
         setState(() {});
@@ -323,7 +323,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     print('AAA');
     // FFmpeg command to convert RTSP to HLS
     String command =
-        'i rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie -c:v libx264 -an -strict experimental -f hls -hls_time 4 -hls_playlist_type event -hls_list_size 0 -hls_segment_filename "output_%03d.ts" output.m3u8';
+        '-i rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie -loglevel debug -c:v libx264 -an -strict experimental -f hls -hls_time 4 -hls_playlist_type event -hls_list_size 0 -hls_segment_filename "output_%03d.ts" /storage/emulated/0/your_directory/output.m3u8';
 
     // Execute the FFmpeg command
     int rc = await _ffmpeg.execute(command);
