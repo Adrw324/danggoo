@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:video_player/video_player.dart';
+import 'package:path_provider/path_provider.dart';
 
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
@@ -32,6 +33,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   late VideoPlayerController _controller;
   late FlutterFFmpeg _ffmpeg;
+
+  String inputPath = 'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
+
+  late String documentDirectory; 
+
+  late String outputPath;
+
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -133,16 +141,31 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                               ),
                               Expanded(
                                 child: Center(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (_controller != null &&
-                                          _controller.value.isInitialized) {
-                                        _controller
-                                            .seekTo(Duration(seconds: 0));
-                                        _controller.play();
-                                      }
-                                    },
-                                    child: Text('Go to Live'),
+                                  child: Row(
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          if (_controller != null &&
+                                              _controller.value.isInitialized) {
+                                            _controller
+                                                .seekTo(Duration(seconds: 0));
+                                            _controller.play();
+                                          }
+                                        },
+                                        child: Text('Go to Live'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          if (_controller != null &&
+                                              _controller.value.isInitialized) {
+                                            _changeVideoPath(outputPath +'/output.m3u8');
+                                            _controller.play();
+                                            print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+                                          }
+                                        },
+                                        child: Text('Reset'),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -302,81 +325,107 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   @override
   void initState() {
     super.initState();
-    // 플레이어 수에 맞게 버튼 카운트 초기화
+
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
     // Initialize FFmpeg
     _ffmpeg = FlutterFFmpeg();
 
+    _startConversion();
+
     _controller = VideoPlayerController.networkUrl(
       Uri.parse('/storage/emulated/0/your_directory/output.m3u8'),
     )..initialize().then((_) {
-        // Ensure the first frame is shown after the video is initialized
-        setState(() {});
+       
       });
 
-    // Start RTSP to HLS conversion
-    _startConversion();
   }
 
   Future<void> _startConversion() async {
     print('AAA');
-    // FFmpeg command to convert RTSP to HLS
-    String command =
-        '-i rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie -loglevel debug -c:v libx264 -an -strict experimental -f hls -hls_time 4 -hls_playlist_type event -hls_list_size 0 -hls_segment_filename "output_%03d.ts" /storage/emulated/0/your_directory/output.m3u8';
+   
+    
+    // Get the document directory path
+    documentDirectory = await _getDocumentDirectory();
+
+    // Create a subdirectory in the document directory to save the files
+    outputPath = '$documentDirectory/ffmpeg_output';
+    await Directory(outputPath).create(recursive: true);
 
     // Execute the FFmpeg command
-    int rc = await _ffmpeg.execute(command);
+    int rc = await _runFFmpeg(inputPath, outputPath);
 
     // Check if FFmpeg execution was successful (return code 0)
     if (rc == 0) {
       // Initialize the video player controller after FFmpeg conversion
-      _initializeVideoPlayer();
+      
     } else {
       print('FFmpeg execution failed with return code $rc');
     }
   }
 
-  void _initializeVideoPlayer() {
+  Future<String> _getDocumentDirectory() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
+    List<String> arguments = [
+      '-i',
+      inputPath,
+      '-c:v',
+      'libx264',
+      '-an',
+      '-strict',
+      'experimental',
+      '-f',
+      'hls',
+      '-hls_time',
+      '4',
+      '-hls_playlist_type',
+      'event',
+      '-hls_list_size',
+      '0',
+      '-hls_segment_filename',
+      '$outputPath/output_%03d.ts',
+      '$outputPath/output.m3u8',
+    ];
+
+    return await _ffmpeg.executeWithArguments(arguments);
+  }
+
+  void _changeVideoPath(String FilePath) {
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse('output.m3u8'),
+      Uri.parse(FilePath),
     )..initialize().then((_) {
-        // Ensure the first frame is shown after the video is initialized
-        setState(() {});
+        _controller.play();
       });
+  }
+
+  Future<void> _deleteFilesInDirectory(String directoryPath) async {
+    try {
+      final directory = Directory(directoryPath);
+      if (await directory.exists()) {
+        await directory.delete(recursive: true);
+        print('Files in $directoryPath deleted successfully.');
+      } else {
+        print('Directory $directoryPath does not exist.');
+      }
+    } catch (e) {
+      print('Error deleting files: $e');
+    }
   }
 
   @override
   void dispose() {
-    // Ensure disposing of the VideoPlayerController and FFmpeg to free up resources
+    _getDocumentDirectory().then((documentDirectory) {
+      _deleteFilesInDirectory(documentDirectory);
+    });
     _controller.dispose();
     _ffmpeg.cancel();
     super.dispose();
   }
 
-  // // Function to start RTSP to HLS conversion using FFmpeg and play the video
-  // Future<void> _startConversionAndPlay() async {
-  //   // FFmpeg command to convert RTSP to HLS
-  //   String command =
-  //       '-i rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie -c:v libx264 -c:a aac -strict experimental -f hls -hls_time 4 -hls_playlist_type event -hls_list_size 6 -hls_segment_filename "output_%03d.ts" output.m3u8';
-
-  //   // Execute the FFmpeg command
-  //   int rc = await _ffmpeg.execute(command);
-
-  //   // Check if FFmpeg execution was successful (return code 0)
-  //   if (rc == 0) {
-  //     print('AAA');
-  //     // Initialize the video player controller after FFmpeg conversion
-  //     _controller = VideoPlayerController.networkUrl(
-  //       Uri.parse('output.m3u8'),
-  //     )..initialize().then((_) {
-  //         // Ensure the first frame is shown after the video is initialized
-  //         setState(() {});
-  //       });
-  //   } else {
-  //     print('FFmpeg execution failed with return code $rc');
-  //   }
-  // }
 
   void startGame(GameData gameData) {
     if (isTimerRunning) {
