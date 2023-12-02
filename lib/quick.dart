@@ -8,6 +8,7 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:chewie/chewie.dart';
 
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
@@ -33,13 +34,14 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   late VideoPlayerController _controller;
   late FlutterFFmpeg _ffmpeg;
+  late ChewieController chewieController;
 
-  String inputPath = 'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
+  String inputPath =
+      'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
 
-  late String documentDirectory; 
+  late String documentDirectory;
 
   late String outputPath;
-
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -132,14 +134,18 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           body: Column(
                             children: [
                               Expanded(
+                                flex: 5,
                                 child: Center(
                                   child: _controller != null &&
                                           _controller.value.isInitialized
-                                      ? VideoPlayer(_controller)
+                                      ? Chewie(
+                                          controller: chewieController,
+                                        )
                                       : CircularProgressIndicator(),
                                 ),
                               ),
                               Expanded(
+                                flex: 1,
                                 child: Center(
                                   child: Row(
                                     children: [
@@ -156,11 +162,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       ),
                                       ElevatedButton(
                                         onPressed: () {
-                                          if (_controller != null &&
-                                              _controller.value.isInitialized) {
-                                            _changeVideoPath(outputPath +'/output.m3u8');
+                                          print(
+                                              'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+                                          if (_controller != null) {
+                                            _changeVideoPath(
+                                                outputPath + '/output.m3u8');
                                             _controller.play();
-                                            print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
                                           }
                                         },
                                         child: Text('Reset'),
@@ -334,17 +341,20 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     _startConversion();
 
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse('https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
-    )..initialize().then((_) {
-       
-      });
+      Uri.parse(
+          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
+    )..initialize().then((_) {});
 
+    chewieController = ChewieController(
+      videoPlayerController: _controller,
+      autoPlay: true,
+      looping: true,
+    );
   }
 
   Future<void> _startConversion() async {
     print('AAA');
-   
-    
+
     // Get the document directory path
     documentDirectory = await _getDocumentDirectory();
 
@@ -358,7 +368,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     // Check if FFmpeg execution was successful (return code 0)
     if (rc == 0) {
       // Initialize the video player controller after FFmpeg conversion
-      
     } else {
       print('FFmpeg execution failed with return code $rc');
     }
@@ -400,6 +409,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     )..initialize().then((_) {
         _controller.play();
       });
+
+    chewieController = ChewieController(
+      videoPlayerController: _controller,
+      autoPlay: true,
+      looping: false,
+    );
   }
 
   Future<void> _deleteFilesInDirectory(String directoryPath) async {
@@ -417,15 +432,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   @override
-  void dispose() {
-    _getDocumentDirectory().then((documentDirectory) {
+  Future<void> dispose() async {
+    await _getDocumentDirectory().then((documentDirectory) {
       _deleteFilesInDirectory(documentDirectory);
     });
     _controller.dispose();
+    chewieController.dispose();
     _ffmpeg.cancel();
     super.dispose();
   }
-
 
   void startGame(GameData gameData) {
     if (isTimerRunning) {
