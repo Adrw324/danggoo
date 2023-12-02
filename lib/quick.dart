@@ -334,7 +334,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     _startConversion();
 
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse('/storage/emulated/0/your_directory/output.m3u8'),
+      Uri.parse('https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
     )..initialize().then((_) {
        
       });
