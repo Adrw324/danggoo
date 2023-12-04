@@ -132,6 +132,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           body: Column(
                             children: [
                               Expanded(
+                                flex: 4,
                                 child: Center(
                                   child: _controller != null &&
                                           _controller.value.isInitialized
@@ -140,6 +141,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 ),
                               ),
                               Expanded(
+                                flex: 1,
                                 child: Center(
                                   child: Row(
                                     children: [
@@ -160,7 +162,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               _controller.value.isInitialized) {
                                             _changeVideoPath(outputPath +'/output.m3u8');
                                             _controller.play();
-                                            print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
                                           }
                                         },
                                         child: Text('Reset'),
