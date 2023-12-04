@@ -6,9 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:chewie/chewie.dart';
+
+class QuickStartWidget extends StatefulWidget {
+  const QuickStartWidget({super.key});
+
+  @override
+  State<QuickStartWidget> createState() => _QuickStartWidgetState();
+}
+
+class _QuickStartWidgetState extends State<QuickStartWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
 
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
@@ -32,12 +44,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   List<bool> isPressed = [false, false, false, false, false, false];
 
-  late VideoPlayerController _controller;
   late FlutterFFmpeg _ffmpeg;
-  late ChewieController chewieController;
 
   String inputPath =
-      'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
+      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
 
   late String documentDirectory;
 
@@ -136,12 +146,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                               Expanded(
                                 flex: 5,
                                 child: Center(
-                                  child: _controller != null &&
-                                          _controller.value.isInitialized
-                                      ? Chewie(
-                                          controller: chewieController,
-                                        )
-                                      : CircularProgressIndicator(),
+                                  child: Center(),
                                 ),
                               ),
                               Expanded(
@@ -150,25 +155,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   child: Row(
                                     children: [
                                       ElevatedButton(
-                                        onPressed: () {
-                                          if (_controller != null &&
-                                              _controller.value.isInitialized) {
-                                            _controller
-                                                .seekTo(Duration(seconds: 0));
-                                            _controller.play();
-                                          }
-                                        },
+                                        onPressed: () {},
                                         child: Text('Go to Live'),
                                       ),
                                       ElevatedButton(
                                         onPressed: () {
                                           print(
                                               'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-                                          if (_controller != null) {
-                                            _changeVideoPath(
-                                                outputPath + '/output.m3u8');
-                                            _controller.play();
-                                          }
                                         },
                                         child: Text('Reset'),
                                       ),
@@ -331,7 +324,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   @override
   void initState() {
-    super.initState();
+    super.didChangeDependencies();
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
@@ -340,16 +333,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     _startConversion();
 
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(
-          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
-    )..initialize().then((_) {});
+    Future.delayed(Duration(seconds: 5), () {
+      print('CCCCC');
 
-    chewieController = ChewieController(
-      videoPlayerController: _controller,
-      autoPlay: true,
-      looping: true,
-    );
+      setState(() {});
+    });
   }
 
   Future<void> _startConversion() async {
@@ -364,7 +352,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     // Execute the FFmpeg command
     int rc = await _runFFmpeg(inputPath, outputPath);
-
+    print('xxxxxxxxxxxxxxx');
     // Check if FFmpeg execution was successful (return code 0)
     if (rc == 0) {
       // Initialize the video player controller after FFmpeg conversion
@@ -403,20 +391,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     return await _ffmpeg.executeWithArguments(arguments);
   }
 
-  void _changeVideoPath(String FilePath) {
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(FilePath),
-    )..initialize().then((_) {
-        _controller.play();
-      });
-
-    chewieController = ChewieController(
-      videoPlayerController: _controller,
-      autoPlay: true,
-      looping: false,
-    );
-  }
-
   Future<void> _deleteFilesInDirectory(String directoryPath) async {
     try {
       final directory = Directory(directoryPath);
@@ -433,12 +407,24 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   @override
   Future<void> dispose() async {
-    await _getDocumentDirectory().then((documentDirectory) {
-      _deleteFilesInDirectory(documentDirectory);
-    });
-    _controller.dispose();
-    chewieController.dispose();
-    _ffmpeg.cancel();
+    await _ffmpeg.cancel();
+
+    if (mounted) {
+      try {
+        // 파일 삭제를 기다립니다.
+        await _getDocumentDirectory().then((documentDirectory) {
+          _deleteFilesInDirectory(documentDirectory);
+        });
+
+        // 파일 삭제가 완료된 경우에만 위젯을 소멸합니다.
+        if (mounted) {
+          setState(() {});
+        }
+      } catch (e) {
+        print('Error deleting files: $e');
+      }
+    }
+
     super.dispose();
   }
 
@@ -947,15 +933,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(10),
             color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
-            // color: Color.fromRGBO(3, 35, 73, 1)
-            // boxShadow: [
-            // BoxShadow(
-            // color: Colors.grey,
-            // offset: const Offset(3.0, 3.0),
-            // blurRadius: 2.0,
-            // spreadRadius: 1.0,
-            // )
-            // ]
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
