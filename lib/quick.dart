@@ -6,8 +6,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
+
+class QuickStartWidget extends StatefulWidget {
+  const QuickStartWidget({super.key});
+
+  @override
+  State<QuickStartWidget> createState() => _QuickStartWidgetState();
+}
+
+class _QuickStartWidgetState extends State<QuickStartWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
 
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
@@ -31,15 +45,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   List<bool> isPressed = [false, false, false, false, false, false];
 
-  late VideoPlayerController _controller;
   late FlutterFFmpeg _ffmpeg;
 
-  String inputPath = 'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
+  String inputPath =
+      'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
 
-  late String documentDirectory; 
+  late String documentDirectory;
 
   late String outputPath;
 
+  late VideoPlayerController _controller;
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -132,12 +147,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           body: Column(
                             children: [
                               Expanded(
-                                flex: 4,
+                                flex: 5,
                                 child: Center(
-                                  child: _controller != null &&
-                                          _controller.value.isInitialized
-                                      ? VideoPlayer(_controller)
-                                      : CircularProgressIndicator(),
+                                  child: _controller.value.isInitialized
+                                      ? AspectRatio(
+                                          aspectRatio:
+                                              _controller.value.aspectRatio,
+                                          child: VideoPlayer(_controller),
+                                        )
+                                      : Container(),
                                 ),
                               ),
                               Expanded(
@@ -147,22 +165,21 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     children: [
                                       ElevatedButton(
                                         onPressed: () {
-                                          if (_controller != null &&
-                                              _controller.value.isInitialized) {
-                                            _controller
-                                                .seekTo(Duration(seconds: 0));
-                                            _controller.play();
-                                          }
+                                          setState(() {
+                                            _controller.value.isPlaying
+                                                ? _controller.pause()
+                                                : _controller.play();
+                                          });
                                         },
-                                        child: Text('Go to Live'),
+                                        child: Icon(
+                                          _controller.value.isPlaying
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                        ),
                                       ),
                                       ElevatedButton(
                                         onPressed: () {
-                                          if (_controller != null &&
-                                              _controller.value.isInitialized) {
-                                            _changeVideoPath(outputPath +'/output.m3u8');
-                                            _controller.play();
-                                          }
+                                          setState(() {});
                                         },
                                         child: Text('Reset'),
                                       ),
@@ -325,7 +342,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   @override
   void initState() {
-    super.initState();
+    super.didChangeDependencies();
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
@@ -334,18 +351,20 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     _startConversion();
 
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse('https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
-    )..initialize().then((_) {
-       
-      });
-
+    Future.delayed(Duration(seconds: 3), () {
+      print('CCCCC');
+      _controller =
+          VideoPlayerController.file(File(outputPath + '/output.m3u8'))
+            ..initialize().then((_) {
+              // Ensure the first frame is shown after the video is initialized, even before the play button has been pressed.
+              setState(() {});
+            });
+    });
   }
 
   Future<void> _startConversion() async {
     print('AAA');
-   
-    
+
     // Get the document directory path
     documentDirectory = await _getDocumentDirectory();
 
@@ -354,15 +373,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     await Directory(outputPath).create(recursive: true);
 
     // Execute the FFmpeg command
-    int rc = await _runFFmpeg(inputPath, outputPath);
-
-    // Check if FFmpeg execution was successful (return code 0)
-    if (rc == 0) {
-      // Initialize the video player controller after FFmpeg conversion
-      
-    } else {
-      print('FFmpeg execution failed with return code $rc');
-    }
+    _runFFmpeg(inputPath, outputPath);
   }
 
   Future<String> _getDocumentDirectory() async {
@@ -395,14 +406,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     return await _ffmpeg.executeWithArguments(arguments);
   }
 
-  void _changeVideoPath(String FilePath) {
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(FilePath),
-    )..initialize().then((_) {
-        _controller.play();
-      });
-  }
-
   Future<void> _deleteFilesInDirectory(String directoryPath) async {
     try {
       final directory = Directory(directoryPath);
@@ -418,15 +421,22 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   @override
-  void dispose() {
-    _getDocumentDirectory().then((documentDirectory) {
-      _deleteFilesInDirectory(documentDirectory);
+  Future<void> dispose() async {
+    Future.delayed(Duration.zero, () async {
+      try {
+        await _controller.dispose();
+        await _deleteFilesInDirectory(outputPath);
+        print('Files Deleted!');
+        await _ffmpeg.cancel();
+      } catch (e) {
+        print('Error during dispose: $e');
+      }
     });
-    _controller.dispose();
-    _ffmpeg.cancel();
+
+    print('Disposed!');
+
     super.dispose();
   }
-
 
   void startGame(GameData gameData) {
     if (isTimerRunning) {
@@ -933,15 +943,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(10),
             color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
-            // color: Color.fromRGBO(3, 35, 73, 1)
-            // boxShadow: [
-            // BoxShadow(
-            // color: Colors.grey,
-            // offset: const Offset(3.0, 3.0),
-            // blurRadius: 2.0,
-            // spreadRadius: 1.0,
-            // )
-            // ]
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
