@@ -342,38 +342,65 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   @override
   void initState() {
-    super.didChangeDependencies();
+    super.initState();
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
-    // Initialize FFmpeg
-    _ffmpeg = FlutterFFmpeg();
+    _initialize();
+  }
 
+  Future<void> _initialize() async {
+    await _getDirectory();
     _startConversion();
+    await _waitForSegment();
+    await _initializeController();
+  }
 
-    Future.delayed(Duration(seconds: 3), () {
-      print('CCCCC');
-      _controller =
-          VideoPlayerController.file(File(outputPath + '/output.m3u8'))
-            ..initialize().then((_) {
-              // Ensure the first frame is shown after the video is initialized, even before the play button has been pressed.
-              setState(() {});
-            });
-    });
+  Future<void> _waitForSegment() async {
+    // 일정 간격으로 isSegmentGenerated를 체크하다가 생성되면 반환
+    while (!(await isSegmentGenerated())) {
+      await Future.delayed(Duration(seconds: 2)); // 적절한 간격으로 조절
+    }
+  }
+
+  Future<void> _initializeController() async {
+    await Future.delayed(Duration(seconds: 3));
+    print('CCCCC');
+    _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
+      ..initialize().then((_) {
+        // Ensure the first frame is shown after the video is initialized, even before the play button has been pressed.
+        setState(() {});
+      });
+  }
+
+  Future<void> _getDirectory() async {
+    documentDirectory = await _getDocumentDirectory();
+
+    // Create a subdirectory in the document directory to save the files
+    outputPath = '$documentDirectory/ffmpeg_output';
   }
 
   Future<void> _startConversion() async {
     print('AAA');
 
-    // Get the document directory path
-    documentDirectory = await _getDocumentDirectory();
-
-    // Create a subdirectory in the document directory to save the files
-    outputPath = '$documentDirectory/ffmpeg_output';
     await Directory(outputPath).create(recursive: true);
-
+    _ffmpeg = FlutterFFmpeg();
     // Execute the FFmpeg command
     _runFFmpeg(inputPath, outputPath);
+  }
+
+  Future<bool> isSegmentGenerated() async {
+    Directory directory = Directory(outputPath);
+    if (await directory.exists()) {
+      List<FileSystemEntity> files = directory.listSync();
+      for (var file in files) {
+        if (file is File && file.path.endsWith('.ts')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   Future<String> _getDocumentDirectory() async {
