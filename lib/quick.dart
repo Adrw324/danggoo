@@ -48,13 +48,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late FlutterFFmpeg _ffmpeg;
 
   String inputPath =
-      'rtsp://rtspstream:44a3d7719b78468d6aeec034b0f8abc4@zephyr.rtsp.stream/movie';
+      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
 
   late String documentDirectory;
 
   late String outputPath;
 
-  late VideoPlayerController _controller;
+  VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
+    ..initialize();
+
+  bool _isLoading = true;
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -141,28 +145,39 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       Expanded(
                         flex: 1,
                         child: Scaffold(
-                          appBar: AppBar(
-                            title: Text('RTSP Stream Player and Recorder'),
-                          ),
+                          appBar: null,
                           body: Column(
                             children: [
                               Expanded(
                                 flex: 5,
                                 child: Center(
-                                  child: _controller.value.isInitialized
-                                      ? AspectRatio(
-                                          aspectRatio:
-                                              _controller.value.aspectRatio,
-                                          child: VideoPlayer(_controller),
+                                  child: _isLoading
+                                      ? Center(
+                                          child: CircularProgressIndicator(),
                                         )
-                                      : Container(),
+                                      : AspectRatio(
+                                          aspectRatio: 16 / 9,
+                                          child: VideoPlayer(_controller),
+                                        ),
                                 ),
                               ),
                               Expanded(
                                 flex: 1,
                                 child: Center(
                                   child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Duration currentPosition =
+                                              _controller.value.position;
+                                          Duration targetPosition =
+                                              currentPosition -
+                                                  const Duration(seconds: 5);
+                                          _controller.seekTo(targetPosition);
+                                        },
+                                        child: Icon(Icons.arrow_back),
+                                      ),
                                       ElevatedButton(
                                         onPressed: () {
                                           setState(() {
@@ -179,9 +194,29 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       ),
                                       ElevatedButton(
                                         onPressed: () {
-                                          setState(() {});
+                                          Duration currentPosition =
+                                              _controller.value.position;
+                                          Duration targetPosition =
+                                              currentPosition +
+                                                  const Duration(seconds: 5);
+                                          _controller.seekTo(targetPosition);
                                         },
-                                        child: Text('Reset'),
+                                        child: Icon(Icons.arrow_forward),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Duration targetPosition =
+                                              _controller.value.duration -
+                                                  const Duration(seconds: 5);
+                                          _controller.seekTo(targetPosition);
+                                        },
+                                        child: Text('LIVE'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          _enterFullScreen();
+                                        },
+                                        child: Text('FULL'),
                                       ),
                                     ],
                                   ),
@@ -359,17 +394,18 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   Future<void> _waitForSegment() async {
     // 일정 간격으로 isSegmentGenerated를 체크하다가 생성되면 반환
     while (!(await isSegmentGenerated())) {
-      await Future.delayed(Duration(seconds: 2)); // 적절한 간격으로 조절
+      await Future.delayed(Duration(seconds: 1)); // 적절한 간격으로 조절
     }
   }
 
   Future<void> _initializeController() async {
-    await Future.delayed(Duration(seconds: 3));
     print('CCCCC');
     _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
       ..initialize().then((_) {
-        // Ensure the first frame is shown after the video is initialized, even before the play button has been pressed.
-        setState(() {});
+        _controller.play();
+        setState(() {
+          _isLoading = false;
+        });
       });
   }
 
@@ -415,12 +451,18 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       '-c:v',
       'libx264',
       '-an',
-      '-strict',
-      'experimental',
+      '-threads',
+      '2',
+      '-preset',
+      'ultrafast',
       '-f',
       'hls',
+      '-s',
+      '960x540',
       '-hls_time',
       '4',
+      '-crf',
+      '28',
       '-hls_playlist_type',
       'event',
       '-hls_list_size',
@@ -445,6 +487,21 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     } catch (e) {
       print('Error deleting files: $e');
     }
+  }
+
+  void _enterFullScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => Scaffold(
+                body: Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
+              )),
+    );
   }
 
   @override
@@ -732,6 +789,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       softWrap: false,
                                     ),
                                     style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(5.0),
+                                        ),
                                         backgroundColor:
                                             Color.fromARGB(1, 2, 52, 161)
                                         // side: BorderSide(
@@ -776,6 +837,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       softWrap: false,
                                     ),
                                     style: ElevatedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(5.0),
+                                      ),
                                       backgroundColor:
                                           Color.fromARGB(1, 2, 52, 161),
                                       // side: BorderSide(
@@ -822,6 +887,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   softWrap: false,
                                 ),
                                 style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                  ),
                                   backgroundColor: () {
                                     if (playerCount % 2 != 0) {
                                       return Color.fromARGB(255, 255, 228, 168);
@@ -877,6 +945,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       softWrap: false,
                                     ),
                                     style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(5.0),
+                                        ),
                                         backgroundColor:
                                             Color.fromARGB(1, 2, 52, 161)
                                         // side: BorderSide(
@@ -921,6 +993,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       softWrap: false,
                                     ),
                                     style: ElevatedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(5.0),
+                                      ),
                                       backgroundColor:
                                           Color.fromARGB(222, 255, 132, 0),
                                       // side: BorderSide(
@@ -1041,6 +1117,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         color: Colors.black),
                                   ),
                                   style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5.0),
+                                    ),
                                     backgroundColor: () {
                                       if (playerCount % 2 != 0) {
                                         return Color.fromARGB(
@@ -1098,6 +1177,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(5.0),
+                                              ),
                                               backgroundColor:
                                                   Color.fromARGB(1, 2, 52, 161)
                                               // side: BorderSide(
@@ -1143,6 +1226,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(5.0),
+                                            ),
                                             backgroundColor:
                                                 Color.fromARGB(1, 2, 52, 161),
                                             // side: BorderSide(
@@ -1189,6 +1276,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(5.0),
+                                              ),
                                               backgroundColor:
                                                   Color.fromARGB(1, 2, 52, 161)
                                               // side: BorderSide(
@@ -1234,6 +1325,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(5.0),
+                                            ),
                                             backgroundColor: Color.fromARGB(
                                                 240, 245, 132, 12),
                                             // side: BorderSide(
@@ -1350,6 +1445,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     color: Colors.black),
                               ),
                               style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(5.0),
+                                ),
                                 backgroundColor: () {
                                   if (playerCount % 2 != 0) {
                                     return Color.fromARGB(255, 255, 228, 168);
@@ -1409,6 +1507,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               softWrap: false,
                                             ),
                                             style: ElevatedButton.styleFrom(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.0),
+                                                ),
                                                 backgroundColor: Color.fromARGB(
                                                     1, 2, 52, 161)
                                                 // side: BorderSide(
@@ -1454,6 +1557,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               softWrap: false,
                                             ),
                                             style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(5.0),
+                                              ),
                                               backgroundColor:
                                                   Color.fromARGB(1, 2, 52, 161),
                                               // side: BorderSide(
@@ -1506,6 +1613,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               softWrap: false,
                                             ),
                                             style: ElevatedButton.styleFrom(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.0),
+                                                ),
                                                 backgroundColor: Color.fromARGB(
                                                     1, 2, 52, 161)
                                                 // side: BorderSide(
@@ -1551,6 +1663,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               softWrap: false,
                                             ),
                                             style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(5.0),
+                                              ),
                                               backgroundColor: Color.fromARGB(
                                                   240, 245, 132, 12),
                                               // side: BorderSide(
