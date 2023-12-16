@@ -8,6 +8,7 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:better_player_hls/better_player_hls.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -48,7 +49,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late FlutterFFmpeg _ffmpeg;
 
   String inputPath =
-      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
+      'rtsp://rtspstream:ec2d53a3c71e7d27d8d9ccd0488d652d@zephyr.rtsp.stream/pattern';
 
   late String documentDirectory;
 
@@ -57,6 +58,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
       'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
     ..initialize();
+
+  late BetterPlayerController _betterPlayerController;
 
   bool _isLoading = true;
 
@@ -157,7 +160,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: VideoPlayer(_controller),
+                                          child: BetterPlayer(
+                                            controller: _betterPlayerController,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -167,57 +172,57 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration currentPosition =
-                                              _controller.value.position;
-                                          Duration targetPosition =
-                                              currentPosition -
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Icon(Icons.arrow_back),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _controller.value.isPlaying
-                                                ? _controller.pause()
-                                                : _controller.play();
-                                          });
-                                        },
-                                        child: Icon(
-                                          _controller.value.isPlaying
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration currentPosition =
-                                              _controller.value.position;
-                                          Duration targetPosition =
-                                              currentPosition +
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Icon(Icons.arrow_forward),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration targetPosition =
-                                              _controller.value.duration -
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Text('LIVE'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          _enterFullScreen();
-                                        },
-                                        child: Text('FULL'),
-                                      ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     Duration currentPosition =
+                                      //         _controller.value.position;
+                                      //     Duration targetPosition =
+                                      //         currentPosition -
+                                      //             const Duration(seconds: 5);
+                                      //     _controller.seekTo(targetPosition);
+                                      //   },
+                                      //   child: Icon(Icons.arrow_back),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       _controller.value.isPlaying
+                                      //           ? _controller.pause()
+                                      //           : _controller.play();
+                                      //     });
+                                      //   },
+                                      //   child: Icon(
+                                      //     _controller.value.isPlaying
+                                      //         ? Icons.pause
+                                      //         : Icons.play_arrow,
+                                      //   ),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     Duration currentPosition =
+                                      //         _controller.value.position;
+                                      //     Duration targetPosition =
+                                      //         currentPosition +
+                                      //             const Duration(seconds: 5);
+                                      //     _controller.seekTo(targetPosition);
+                                      //   },
+                                      //   child: Icon(Icons.arrow_forward),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     Duration targetPosition =
+                                      //         _controller.value.duration -
+                                      //             const Duration(seconds: 5);
+                                      //     _controller.seekTo(targetPosition);
+                                      //   },
+                                      //   child: Text('LIVE'),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     _enterFullScreen();
+                                      //   },
+                                      //   child: Text('FULL'),
+                                      // ),
                                     ],
                                   ),
                                 ),
@@ -386,6 +391,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   Future<void> _initialize() async {
     await _getDirectory();
+    await _deleteFilesInDirectory(outputPath);
     _startConversion();
     await _waitForSegment();
     await _initializeController();
@@ -399,14 +405,41 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Future<void> _initializeController() async {
-    print('CCCCC');
-    _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
-      ..initialize().then((_) {
-        _controller.play();
-        setState(() {
-          _isLoading = false;
-        });
-      });
+    print('Initializing Controller!!!');
+    // _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
+    //   ..initialize().then((_) {
+    //     _controller.play();
+    //     setState(() {
+    //       _isLoading = false;
+    //     });
+    //   });
+
+    // betterPlayerDataSource = BetterPlayerDataSource(
+    //     BetterPlayerDataSourceType.file, outputPath + "/output.m3u8");
+
+    File file = File(outputPath + "/output.m3u8");
+
+  
+    if (await file.exists()) {
+      print('파일이 존재합니다.');
+    } else {
+      print('파일이 존재하지 않습니다.');
+    }
+
+    _betterPlayerController = BetterPlayerController(
+        BetterPlayerConfiguration(
+          aspectRatio: 16 / 9,
+        ),
+        betterPlayerDataSource: BetterPlayerDataSource(
+            BetterPlayerDataSourceType.network,outputPath + "/output.m3u8",  liveStream: true),
+           );
+
+    setState(() {
+      _betterPlayerController.play();
+      _isLoading = false;
+      print('DDDDDD');
+      print(_isLoading);
+    });
   }
 
   Future<void> _getDirectory() async {
@@ -430,7 +463,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     if (await directory.exists()) {
       List<FileSystemEntity> files = directory.listSync();
       for (var file in files) {
-        if (file is File && file.path.endsWith('.ts')) {
+        if (file is File && file.path.endsWith('.m3u8')) {
           return true;
         }
       }
