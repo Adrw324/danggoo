@@ -7,8 +7,8 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:video_player/video_player.dart';
-import 'package:lecle_yoyo_player/lecle_yoyo_player.dart';
+import 'package:flutter_playout/video.dart';
+import 'package:flutter_playout/player_state.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -49,18 +49,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late FlutterFFmpeg _ffmpeg;
 
   String inputPath =
-      'rtsp://rtspstream:ec2d53a3c71e7d27d8d9ccd0488d652d@zephyr.rtsp.stream/pattern';
+      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
 
   late String documentDirectory;
 
   late String outputPath;
 
-  VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
-    ..initialize();
-
-
   bool _isLoading = true;
+
+  PlayerState _desiredState = PlayerState.PLAYING;
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -159,17 +156,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: YoYoPlayer(
-    aspectRatio: 16 / 9,
-    url: outputPath + '/output.m3u8',
-    videoPlayerOptions: VideoPlayerOptions( 
-      
-    ),
-    videoStyle: VideoStyle(
-      showLiveDirectButton: true,
-    ),
-    videoLoadingStyle: VideoLoadingStyle(),
-  ),
+                                          child: Video(
+                                              position: 0,
+                                              desiredState: _desiredState,
+                                              showControls: false,
+                                              autoPlay: true,
+                                              url: outputPath + "/output.m3u8"),
                                         ),
                                 ),
                               ),
@@ -426,7 +418,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     File file = File(outputPath + "/output.m3u8");
 
-  
     if (await file.exists()) {
       print('파일이 존재합니다.');
     } else {
@@ -520,26 +511,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
   }
 
-  void _enterFullScreen() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => Scaffold(
-                body: Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  ),
-                ),
-              )),
-    );
-  }
-
   @override
   Future<void> dispose() async {
     Future.delayed(Duration.zero, () async {
       try {
-        await _controller.dispose();
         await _deleteFilesInDirectory(outputPath);
         print('Files Deleted!');
         await _ffmpeg.cancel();

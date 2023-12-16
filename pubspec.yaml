@@ -39,8 +39,9 @@ dependencies:
   provider:
   flutter_ffmpeg: ^0.4.2
   path_provider: ^2.1.1
-  video_player: ^2.4.4
-  lecle_yoyo_player: ^0.0.8
+  flutter_playout: 
+    path: /Users/andrewhan/Projects/niceq/danggoo/flutter_playout
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

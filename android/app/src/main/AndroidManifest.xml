@@ -29,6 +29,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <receiver android:name="tv.mta.flutter_playout.audio.RemoteReceiver"
+        android:exported="false">   
+        </receiver>
+        <receiver android:name="tv.mta.flutter_playout.video.RemoteReceiver"
+        android:exported="false">   
+        </receiver>  
     </application>
     <uses-permission android:name="android.permission.INTERNET" />
+    
 </manifest>
