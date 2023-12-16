@@ -8,7 +8,7 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:better_player_hls/better_player_hls.dart';
+import 'package:lecle_yoyo_player/lecle_yoyo_player.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -59,7 +59,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
     ..initialize();
 
-  late BetterPlayerController _betterPlayerController;
 
   bool _isLoading = true;
 
@@ -160,9 +159,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: BetterPlayer(
-                                            controller: _betterPlayerController,
-                                          ),
+                                          child: YoYoPlayer(
+    aspectRatio: 16 / 9,
+    url: outputPath + '/output.m3u8',
+    videoPlayerOptions: VideoPlayerOptions( 
+      
+    ),
+    videoStyle: VideoStyle(
+      showLiveDirectButton: true,
+    ),
+    videoLoadingStyle: VideoLoadingStyle(),
+  ),
                                         ),
                                 ),
                               ),
@@ -426,16 +433,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       print('파일이 존재하지 않습니다.');
     }
 
-    _betterPlayerController = BetterPlayerController(
-        BetterPlayerConfiguration(
-          aspectRatio: 16 / 9,
-        ),
-        betterPlayerDataSource: BetterPlayerDataSource(
-            BetterPlayerDataSourceType.network,outputPath + "/output.m3u8",  liveStream: true),
-           );
-
     setState(() {
-      _betterPlayerController.play();
       _isLoading = false;
       print('DDDDDD');
       print(_isLoading);
