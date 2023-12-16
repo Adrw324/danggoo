@@ -40,6 +40,7 @@ dependencies:
   flutter_ffmpeg: ^0.4.2
   path_provider: ^2.1.1
   video_player: 
+    path: /Users/andrewhan/Projects/niceq/danggoo/video_player
 dev_dependencies:
   flutter_test:
     sdk: flutter

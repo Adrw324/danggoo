@@ -157,7 +157,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: VideoPlayer(_controller),
+                                          child: Stack(
+                                              alignment: Alignment.bottomCenter,
+                                              children: <Widget>[
+                                                VideoPlayer(
+                                                  _controller,
+                                                ),
+                                                VideoProgressIndicator(
+                                                  _controller,
+                                                  allowScrubbing: true,
+                                                )
+                                              ]),
                                         ),
                                 ),
                               ),
@@ -386,6 +396,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   Future<void> _initialize() async {
     await _getDirectory();
+    await _deleteFilesInDirectory(outputPath);
     _startConversion();
     await _waitForSegment();
     await _initializeController();
@@ -399,7 +410,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Future<void> _initializeController() async {
-    print('CCCCC');
+    print('Initializing Controller!!!');
+
+    File file = File(outputPath + "/output.m3u8");
+
+    if (await file.exists()) {
+      print('파일이 존재합니다.');
+    } else {
+      print('파일이 존재하지 않습니다.');
+    }
+
     _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
       ..initialize().then((_) {
         _controller.play();
