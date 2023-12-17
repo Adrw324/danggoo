@@ -59,6 +59,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   PlayerState _desiredState = PlayerState.PLAYING;
 
+  double _position = 0;
+
+  Video _video = Video();
+
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
 
@@ -156,12 +160,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: Video(
-                                              position: 0,
-                                              desiredState: _desiredState,
-                                              showControls: false,
-                                              autoPlay: true,
-                                              url: outputPath + "/output.m3u8"),
+                                          child: _video,
                                         ),
                                 ),
                               ),
@@ -171,42 +170,38 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      // ElevatedButton(
-                                      //   onPressed: () {
-                                      //     Duration currentPosition =
-                                      //         _controller.value.position;
-                                      //     Duration targetPosition =
-                                      //         currentPosition -
-                                      //             const Duration(seconds: 5);
-                                      //     _controller.seekTo(targetPosition);
-                                      //   },
-                                      //   child: Icon(Icons.arrow_back),
-                                      // ),
-                                      // ElevatedButton(
-                                      //   onPressed: () {
-                                      //     setState(() {
-                                      //       _controller.value.isPlaying
-                                      //           ? _controller.pause()
-                                      //           : _controller.play();
-                                      //     });
-                                      //   },
-                                      //   child: Icon(
-                                      //     _controller.value.isPlaying
-                                      //         ? Icons.pause
-                                      //         : Icons.play_arrow,
-                                      //   ),
-                                      // ),
-                                      // ElevatedButton(
-                                      //   onPressed: () {
-                                      //     Duration currentPosition =
-                                      //         _controller.value.position;
-                                      //     Duration targetPosition =
-                                      //         currentPosition +
-                                      //             const Duration(seconds: 5);
-                                      //     _controller.seekTo(targetPosition);
-                                      //   },
-                                      //   child: Icon(Icons.arrow_forward),
-                                      // ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _position -= 5;
+                                          });
+                                        },
+                                        child: Icon(Icons.arrow_back),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _desiredState == PlayerState.PLAYING
+                                                ? _desiredState =
+                                                    PlayerState.PAUSED
+                                                : _desiredState =
+                                                    PlayerState.PLAYING;
+                                          });
+                                        },
+                                        child: Icon(
+                                          _desiredState == PlayerState.PLAYING
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _position += 5;
+                                          });
+                                        },
+                                        child: Icon(Icons.arrow_forward),
+                                      ),
                                       // ElevatedButton(
                                       //   onPressed: () {
                                       //     Duration targetPosition =
@@ -216,12 +211,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       //   },
                                       //   child: Text('LIVE'),
                                       // ),
-                                      // ElevatedButton(
-                                      //   onPressed: () {
-                                      //     _enterFullScreen();
-                                      //   },
-                                      //   child: Text('FULL'),
-                                      // ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          _enterFullScreen();
+                                        },
+                                        child: Text('FULL'),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -424,6 +419,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       print('파일이 존재하지 않습니다.');
     }
 
+    _video = Video(
+        position: _position,
+        desiredState: _desiredState,
+        showControls: true,
+        autoPlay: true,
+        url: outputPath + "/output.m3u8");
+
     setState(() {
       _isLoading = false;
       print('DDDDDD');
@@ -509,6 +511,20 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     } catch (e) {
       print('Error deleting files: $e');
     }
+  }
+
+  void _enterFullScreen() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: _video,
+          );
+        },
+      ),
+    );
   }
 
   @override

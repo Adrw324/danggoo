@@ -105,11 +105,7 @@ class _VideoState extends State<Video> {
               widget.onViewCreated!(viewId);
             }
           },
-          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
-            new Factory<OneSequenceGestureRecognizer>(
-              () => new EagerGestureRecognizer(),
-            ),
-          ].toSet(),
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
         );
       }
 
@@ -135,11 +131,7 @@ class _VideoState extends State<Video> {
               widget.onViewCreated!(viewId);
             }
           },
-          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
-            new Factory<OneSequenceGestureRecognizer>(
-              () => new EagerGestureRecognizer(),
-            ),
-          ].toSet(),
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
         );
       }
     }
