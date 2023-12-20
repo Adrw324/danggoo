@@ -39,8 +39,7 @@ dependencies:
   provider:
   flutter_ffmpeg: ^0.4.2
   path_provider: ^2.1.1
-  flutter_playout: 
-    path: /Users/andrewhan/Projects/niceq/danggoo/flutter_playout
+  native_video_view: ^1.0.5
 
 dev_dependencies:
   flutter_test:

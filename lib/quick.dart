@@ -7,8 +7,7 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_playout/video.dart';
-import 'package:flutter_playout/player_state.dart';
+import 'package:native_video_view/native_video_view.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -49,19 +48,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late FlutterFFmpeg _ffmpeg;
 
   String inputPath =
-      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
+      'rtsp://admin:a1234567@192.168.50.106:554/h264Preview_01_main';
 
   late String documentDirectory;
 
   late String outputPath;
 
   bool _isLoading = true;
-
-  PlayerState _desiredState = PlayerState.PLAYING;
-
-  double _position = 0;
-
-  Video _video = Video();
 
   Widget build(BuildContext context) {
     final gameData = context.watch<GameData>();
@@ -160,7 +153,34 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: _video,
+                                          child: NativeVideoView(
+                                            // useExoPlayer: true,
+                                            keepAspectRatio: true,
+                                            showMediaController: true,
+                                            enableVolumeControl: false,
+                                            onCreated: (controller) {
+                                              controller.setVideoSource(
+                                                outputPath + "output.m3u8",
+                                                sourceType:
+                                                    VideoSourceType.network,
+                                                requestAudioFocus: false,
+                                              );
+                                            },
+                                            onPrepared: (controller, info) {
+                                              debugPrint(
+                                                  'NativeVideoView: Video prepared');
+                                              controller.play();
+                                            },
+                                            onError: (controller, what, extra,
+                                                message) {
+                                              debugPrint(
+                                                  'NativeVideoView: Player Error ($what | $extra | $message)');
+                                            },
+                                            onCompletion: (controller) {
+                                              debugPrint(
+                                                  'NativeVideoView: Video completed');
+                                            },
+                                          ),
                                         ),
                                 ),
                               ),
@@ -170,38 +190,38 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _position -= 5;
-                                          });
-                                        },
-                                        child: Icon(Icons.arrow_back),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _desiredState == PlayerState.PLAYING
-                                                ? _desiredState =
-                                                    PlayerState.PAUSED
-                                                : _desiredState =
-                                                    PlayerState.PLAYING;
-                                          });
-                                        },
-                                        child: Icon(
-                                          _desiredState == PlayerState.PLAYING
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _position += 5;
-                                          });
-                                        },
-                                        child: Icon(Icons.arrow_forward),
-                                      ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       _position -= 5;
+                                      //     });
+                                      //   },
+                                      //   child: Icon(Icons.arrow_back),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       _desiredState == PlayerState.PLAYING
+                                      //           ? _desiredState =
+                                      //               PlayerState.PAUSED
+                                      //           : _desiredState =
+                                      //               PlayerState.PLAYING;
+                                      //     });
+                                      //   },
+                                      //   child: Icon(
+                                      //     _desiredState == PlayerState.PLAYING
+                                      //         ? Icons.pause
+                                      //         : Icons.play_arrow,
+                                      //   ),
+                                      // ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       _position += 5;
+                                      //     });
+                                      //   },
+                                      //   child: Icon(Icons.arrow_forward),
+                                      // ),
                                       // ElevatedButton(
                                       //   onPressed: () {
                                       //     Duration targetPosition =
@@ -211,12 +231,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       //   },
                                       //   child: Text('LIVE'),
                                       // ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          _enterFullScreen();
-                                        },
-                                        child: Text('FULL'),
-                                      ),
+                                      // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     _enterFullScreen();
+                                      //   },
+                                      //   child: Text('FULL'),
+                                      // ),
                                     ],
                                   ),
                                 ),
@@ -419,13 +439,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       print('파일이 존재하지 않습니다.');
     }
 
-    _video = Video(
-        position: _position,
-        desiredState: _desiredState,
-        showControls: true,
-        autoPlay: true,
-        url: outputPath + "/output.m3u8");
-
     setState(() {
       _isLoading = false;
       print('DDDDDD');
@@ -513,19 +526,19 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
   }
 
-  void _enterFullScreen() {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return FadeTransition(
-            opacity: animation,
-            child: _video,
-          );
-        },
-      ),
-    );
-  }
+  // void _enterFullScreen() {
+  //   Navigator.push(
+  //     context,
+  //     PageRouteBuilder(
+  //       pageBuilder: (context, animation, secondaryAnimation) {
+  //         return FadeTransition(
+  //           opacity: animation,
+  //           child: _video,
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   @override
   Future<void> dispose() async {

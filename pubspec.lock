@@ -86,13 +86,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
-  flutter_playout:
-    dependency: "direct main"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
     description:
-      path: "/Users/andrewhan/Projects/niceq/danggoo/flutter_playout"
-      relative: false
-    source: path
-    version: "2.0.1"
+      name: flutter_plugin_android_lifecycle
+      sha256: b068ffc46f82a55844acfa4fdbb61fad72fa2aef0905548419d97f0f95c456da
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.17"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -146,6 +147,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
+  native_video_view:
+    dependency: "direct main"
+    description:
+      name: native_video_view
+      sha256: "8628f648814e4b75a5a0f2b28a442eaf53aedc765768a5255aeae4e6e74d5055"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   nested:
     dependency: transitive
     description:
