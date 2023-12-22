@@ -49,7 +49,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late FlutterFFmpeg _ffmpeg;
 
   String inputPath =
-      'rtsp://admin:11111111@192.168.50.186:554/cam/realmonitor?channel=1&subtype=0';
+      'rtsp://rtspstream:ec2d53a3c71e7d27d8d9ccd0488d652d@zephyr.rtsp.stream/pattern';
 
   late String documentDirectory;
 
@@ -476,7 +476,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       'libx264',
       '-an',
       '-threads',
-      '2',
+      '4',
       '-preset',
       'ultrafast',
       '-f',
