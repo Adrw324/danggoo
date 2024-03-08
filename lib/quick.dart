@@ -163,67 +163,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           child: playerView),
                                 ),
                               ),
-                              // Expanded(
-                              //   flex: 1,
-                              //   child: Center(
-                              //     child: Row(
-                              //       mainAxisAlignment: MainAxisAlignment.center,
-                              //       children: [
-                              //         ElevatedButton(
-                              //           onPressed: () {
-                              //             Duration currentPosition =
-                              //                 _controller.value.position;
-                              //             Duration targetPosition =
-                              //                 currentPosition -
-                              //                     const Duration(seconds: 5);
-                              //             _controller.seekTo(targetPosition);
-                              //           },
-                              //           child: Icon(Icons.arrow_back),
-                              //         ),
-                              //         ElevatedButton(
-                              //           onPressed: () {
-                              //             setState(() {
-                              //               _controller.value.isPlaying
-                              //                   ? _controller.pause()
-                              //                   : _controller.play();
-                              //             });
-                              //           },
-                              //           child: Icon(
-                              //             _controller.value.isPlaying
-                              //                 ? Icons.pause
-                              //                 : Icons.play_arrow,
-                              //           ),
-                              //         ),
-                              //         ElevatedButton(
-                              //           onPressed: () {
-                              //             Duration currentPosition =
-                              //                 _controller.value.position;
-                              //             Duration targetPosition =
-                              //                 currentPosition +
-                              //                     const Duration(seconds: 5);
-                              //             _controller.seekTo(targetPosition);
-                              //           },
-                              //           child: Icon(Icons.arrow_forward),
-                              //         ),
-                              //         ElevatedButton(
-                              //           onPressed: () {
-                              //             Duration targetPosition =
-                              //                 _controller.value.duration -
-                              //                     const Duration(seconds: 5);
-                              //             _controller.seekTo(targetPosition);
-                              //           },
-                              //           child: Text('LIVE'),
-                              //         ),
-                              //         ElevatedButton(
-                              //           onPressed: () {
-                              //             _enterFullScreen();
-                              //           },
-                              //           child: Text('FULL'),
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
-                              // ),
                             ],
                           ),
                         ),
@@ -425,9 +364,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     //       _isLoading = false;
     //     });
     //   });
+    playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
 
-// MyPlayerView 클래스의 초기화가 완료될 때까지 기다린 후, setState를 호출합니다.
-    await initializePlayerView();
     setState(() {
       _isLoading = false;
     });
@@ -435,10 +373,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     // setState(() {
     //   _isLoading = false;
     // });
-  }
-
-  Future<void> initializePlayerView() async {
-    playerView = await MyPlayerView(video_url: outputPath + '/output.m3u8');
   }
 
   Future<void> _getDirectory() async {
@@ -500,8 +434,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       '-hls_list_size',
       '0',
       '-hls_segment_filename',
-      '-loglevel',
-      'quiet',
+      // '-loglevel',
+      // 'quiet',
       '$outputPath/output_%03d.ts',
       '$outputPath/output.m3u8',
     ];

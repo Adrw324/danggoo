@@ -1,7 +1,9 @@
 package com.example.danggoo
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -10,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
 import io.flutter.plugin.platform.PlatformView
 
@@ -44,17 +47,29 @@ private val activity: Activity) : PlatformView {
 
   }
 
+  @SuppressLint("ClickableViewAccessibility")
   fun setUpPlayer(url: String){
     player = ExoPlayer.Builder(context)
     .build()
     .also {
-      exoPlayer-> 
+      exoPlayer->
       playerView.player = exoPlayer
       val mediaItem = MediaItem.fromUri(url)
       exoPlayer.setMediaItem(mediaItem)
       exoPlayer.playWhenReady = playWhenReady
       exoPlayer.seekTo(currentItem, playbackPosition)
       exoPlayer.prepare()
+      playerView.useController = true;
+
+      playerView.setOnTouchListener { _, event ->
+        // 터치 이벤트 디버깅 로그
+        Log.d("MyPlayerView", "TouchEvent: $event")
+        false
+      }
+
+
+
+
     }
     hideSystemUi()
   }
