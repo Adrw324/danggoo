@@ -4,10 +4,16 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 // import 'package:audioplayers/audioplayers.dart';
 
 void main() {
+  VideoPlayerMediaKit.ensureInitialized(
+    macOS: true,
+    windows: true,
+    linux: true,
+  );
   runApp(
     ChangeNotifierProvider(
       create: (context) => GameData(),

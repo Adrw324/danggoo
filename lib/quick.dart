@@ -8,6 +8,7 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'player.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -54,9 +55,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   late String outputPath;
 
-  VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
-    ..initialize();
+  // VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
+  //     'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
+  //   ..initialize();
+
+  late MyPlayerView playerView;
 
   bool _isLoading = true;
 
@@ -157,81 +160,70 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: Stack(
-                                              alignment: Alignment.bottomCenter,
-                                              children: <Widget>[
-                                                VideoPlayer(
-                                                  _controller,
-                                                ),
-                                                VideoProgressIndicator(
-                                                  _controller,
-                                                  allowScrubbing: true,
-                                                )
-                                              ]),
-                                        ),
+                                          child: playerView),
                                 ),
                               ),
-                              Expanded(
-                                flex: 1,
-                                child: Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration currentPosition =
-                                              _controller.value.position;
-                                          Duration targetPosition =
-                                              currentPosition -
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Icon(Icons.arrow_back),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _controller.value.isPlaying
-                                                ? _controller.pause()
-                                                : _controller.play();
-                                          });
-                                        },
-                                        child: Icon(
-                                          _controller.value.isPlaying
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration currentPosition =
-                                              _controller.value.position;
-                                          Duration targetPosition =
-                                              currentPosition +
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Icon(Icons.arrow_forward),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Duration targetPosition =
-                                              _controller.value.duration -
-                                                  const Duration(seconds: 5);
-                                          _controller.seekTo(targetPosition);
-                                        },
-                                        child: Text('LIVE'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          _enterFullScreen();
-                                        },
-                                        child: Text('FULL'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              // Expanded(
+                              //   flex: 1,
+                              //   child: Center(
+                              //     child: Row(
+                              //       mainAxisAlignment: MainAxisAlignment.center,
+                              //       children: [
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             Duration currentPosition =
+                              //                 _controller.value.position;
+                              //             Duration targetPosition =
+                              //                 currentPosition -
+                              //                     const Duration(seconds: 5);
+                              //             _controller.seekTo(targetPosition);
+                              //           },
+                              //           child: Icon(Icons.arrow_back),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             setState(() {
+                              //               _controller.value.isPlaying
+                              //                   ? _controller.pause()
+                              //                   : _controller.play();
+                              //             });
+                              //           },
+                              //           child: Icon(
+                              //             _controller.value.isPlaying
+                              //                 ? Icons.pause
+                              //                 : Icons.play_arrow,
+                              //           ),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             Duration currentPosition =
+                              //                 _controller.value.position;
+                              //             Duration targetPosition =
+                              //                 currentPosition +
+                              //                     const Duration(seconds: 5);
+                              //             _controller.seekTo(targetPosition);
+                              //           },
+                              //           child: Icon(Icons.arrow_forward),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             Duration targetPosition =
+                              //                 _controller.value.duration -
+                              //                     const Duration(seconds: 5);
+                              //             _controller.seekTo(targetPosition);
+                              //           },
+                              //           child: Text('LIVE'),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             _enterFullScreen();
+                              //           },
+                              //           child: Text('FULL'),
+                              //         ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -420,13 +412,33 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       print('파일이 존재하지 않습니다.');
     }
 
-    _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
-      ..initialize().then((_) {
-        _controller.play();
-        setState(() {
-          _isLoading = false;
-        });
-      });
+    print('파일이 존재합니다.');
+
+    // playerView = MyPlayerView(
+    //     video_url:
+    //         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
+
+    // _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
+    //   ..initialize().then((_) {
+    //     _controller.play();
+    //     setState(() {
+    //       _isLoading = false;
+    //     });
+    //   });
+
+// MyPlayerView 클래스의 초기화가 완료될 때까지 기다린 후, setState를 호출합니다.
+    await initializePlayerView();
+    setState(() {
+      _isLoading = false;
+    });
+
+    // setState(() {
+    //   _isLoading = false;
+    // });
+  }
+
+  Future<void> initializePlayerView() async {
+    playerView = await MyPlayerView(video_url: outputPath + '/output.m3u8');
   }
 
   Future<void> _getDirectory() async {
@@ -488,6 +500,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       '-hls_list_size',
       '0',
       '-hls_segment_filename',
+      '-loglevel',
+      'quiet',
       '$outputPath/output_%03d.ts',
       '$outputPath/output.m3u8',
     ];
@@ -509,26 +523,26 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
   }
 
-  void _enterFullScreen() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => Scaffold(
-                body: Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  ),
-                ),
-              )),
-    );
-  }
+  // void _enterFullScreen() {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //         builder: (context) => Scaffold(
+  //               body: Center(
+  //                 child: AspectRatio(
+  //                   aspectRatio: _controller.value.aspectRatio,
+  //                   child: VideoPlayer(_controller),
+  //                 ),
+  //               ),
+  //             )),
+  //   );
+  // }
 
   @override
   Future<void> dispose() async {
     Future.delayed(Duration.zero, () async {
       try {
-        await _controller.dispose();
+        // await _controller.dispose();
         await _deleteFilesInDirectory(outputPath);
         print('Files Deleted!');
         await _ffmpeg.cancel();
