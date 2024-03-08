@@ -7,13 +7,15 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.annotation.OptIn
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.PlayerControlView
 import io.flutter.plugin.platform.PlatformView
 
 class MyPlayerView(private val context: Context, id: Int, creationParams: Map<String?, Any?>?,
@@ -23,7 +25,7 @@ private val activity: Activity) : PlatformView {
   private var playWhenReady = true
   private var currentItem = 0
   private var playbackPosition = 0L
-  private var playerView: PlayerView
+  private var playerView: PlayerControlView
 
   override fun getView(): View {
     return linearLayout
@@ -40,14 +42,15 @@ private val activity: Activity) : PlatformView {
       ViewGroup.LayoutParams.MATCH_PARENT)
     linearLayout.layoutParams = layoutParams
 
-    playerView = PlayerView(context)
+    playerView = PlayerControlView(context)
     playerView.layoutParams = layoutParams
+
     linearLayout.addView(playerView)
     setUpPlayer(creationParams?.get("url").toString())
 
   }
 
-  @SuppressLint("ClickableViewAccessibility")
+  @OptIn(UnstableApi::class) @SuppressLint("ClickableViewAccessibility")
   fun setUpPlayer(url: String){
     player = ExoPlayer.Builder(context)
     .build()
@@ -59,7 +62,6 @@ private val activity: Activity) : PlatformView {
       exoPlayer.playWhenReady = playWhenReady
       exoPlayer.seekTo(currentItem, playbackPosition)
       exoPlayer.prepare()
-      playerView.useController = true;
 
       playerView.setOnTouchListener { _, event ->
         // 터치 이벤트 디버깅 로그

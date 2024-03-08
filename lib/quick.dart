@@ -326,10 +326,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Future<void> _initialize() async {
-    await _getDirectory();
-    await _deleteFilesInDirectory(outputPath);
-    _startConversion();
-    await _waitForSegment();
+    // await _getDirectory();
+    // await _deleteFilesInDirectory(outputPath);
+    // _startConversion();
+    // await _waitForSegment();
     await _initializeController();
   }
 
@@ -343,15 +343,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   Future<void> _initializeController() async {
     print('Initializing Controller!!!');
 
-    File file = File(outputPath + "/output.m3u8");
+    // File file = File(outputPath + "/output.m3u8");
 
-    if (await file.exists()) {
-      print('파일이 존재합니다.');
-    } else {
-      print('파일이 존재하지 않습니다.');
-    }
+    // if (await file.exists()) {
+    //   print('파일이 존재합니다.');
+    // } else {
+    //   print('파일이 존재하지 않습니다.');
+    // }
 
-    print('파일이 존재합니다.');
+    // print('파일이 존재합니다.');
 
     // playerView = MyPlayerView(
     //     video_url:
@@ -364,7 +364,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     //       _isLoading = false;
     //     });
     //   });
-    playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
+
+    // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
+
+    playerView = MyPlayerView(
+        video_url:
+            'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
 
     setState(() {
       _isLoading = false;
