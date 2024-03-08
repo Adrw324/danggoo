@@ -164,63 +164,63 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         ),
                                 ),
                               ),
-                              Expanded(
-                                flex: 1,
-                                child: Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _position -= 5;
-                                          });
-                                        },
-                                        child: Icon(Icons.arrow_back),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _desiredState == PlayerState.PLAYING
-                                                ? _desiredState =
-                                                    PlayerState.PAUSED
-                                                : _desiredState =
-                                                    PlayerState.PLAYING;
-                                          });
-                                        },
-                                        child: Icon(
-                                          _desiredState == PlayerState.PLAYING
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _position += 5;
-                                          });
-                                        },
-                                        child: Icon(Icons.arrow_forward),
-                                      ),
-                                      // ElevatedButton(
-                                      //   onPressed: () {
-                                      //     Duration targetPosition =
-                                      //         _controller.value.duration -
-                                      //             const Duration(seconds: 5);
-                                      //     _controller.seekTo(targetPosition);
-                                      //   },
-                                      //   child: Text('LIVE'),
-                                      // ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          _enterFullScreen();
-                                        },
-                                        child: Text('FULL'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              // Expanded(
+                              //   flex: 1,
+                              //   child: Center(
+                              //     child: Row(
+                              //       mainAxisAlignment: MainAxisAlignment.center,
+                              //       children: [
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             setState(() {
+                              //               _position -= 5;
+                              //             });
+                              //           },
+                              //           child: Icon(Icons.arrow_back),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             setState(() {
+                              //               _desiredState == PlayerState.PLAYING
+                              //                   ? _desiredState =
+                              //                       PlayerState.PAUSED
+                              //                   : _desiredState =
+                              //                       PlayerState.PLAYING;
+                              //             });
+                              //           },
+                              //           child: Icon(
+                              //             _desiredState == PlayerState.PLAYING
+                              //                 ? Icons.pause
+                              //                 : Icons.play_arrow,
+                              //           ),
+                              //         ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             setState(() {
+                              //               _position += 5;
+                              //             });
+                              //           },
+                              //           child: Icon(Icons.arrow_forward),
+                              //         ),
+                              //         // ElevatedButton(
+                              //         //   onPressed: () {
+                              //         //     Duration targetPosition =
+                              //         //         _controller.value.duration -
+                              //         //             const Duration(seconds: 5);
+                              //         //     _controller.seekTo(targetPosition);
+                              //         //   },
+                              //         //   child: Text('LIVE'),
+                              //         // ),
+                              //         ElevatedButton(
+                              //           onPressed: () {
+                              //             _enterFullScreen();
+                              //           },
+                              //           child: Text('FULL'),
+                              //         ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -491,6 +491,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       'event',
       '-hls_list_size',
       '0',
+      '-loglevel',
+      'quiet',
       '-hls_segment_filename',
       '$outputPath/output_%03d.ts',
       '$outputPath/output.m3u8',
