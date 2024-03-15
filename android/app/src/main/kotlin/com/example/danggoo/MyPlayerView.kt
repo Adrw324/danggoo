@@ -15,7 +15,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.media3.ui.PlayerControlView
 import io.flutter.plugin.platform.PlatformView
 
 class MyPlayerView(private val context: Context, id: Int, creationParams: Map<String?, Any?>?,
@@ -25,7 +24,7 @@ private val activity: Activity) : PlatformView {
   private var playWhenReady = true
   private var currentItem = 0
   private var playbackPosition = 0L
-  private var playerView: PlayerControlView
+  private var playerView: PlayerView
 
   override fun getView(): View {
     return linearLayout
@@ -42,7 +41,7 @@ private val activity: Activity) : PlatformView {
       ViewGroup.LayoutParams.MATCH_PARENT)
     linearLayout.layoutParams = layoutParams
 
-    playerView = PlayerControlView(context)
+    playerView = PlayerView(context)
     playerView.layoutParams = layoutParams
 
     linearLayout.addView(playerView)
@@ -63,6 +62,8 @@ private val activity: Activity) : PlatformView {
       exoPlayer.seekTo(currentItem, playbackPosition)
       exoPlayer.prepare()
 
+
+
       playerView.setOnTouchListener { _, event ->
         // 터치 이벤트 디버깅 로그
         Log.d("MyPlayerView", "TouchEvent: $event")
@@ -70,10 +71,11 @@ private val activity: Activity) : PlatformView {
       }
 
 
-
-
+      playerView.useController = true
     }
+    playerView.useController = true
     hideSystemUi()
+
   }
 
   private fun hideSystemUi(){
