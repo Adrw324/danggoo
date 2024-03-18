@@ -73,7 +73,7 @@ private val activity: Activity) : PlatformView {
 
       playerView.useController = true
     }
-    playerView.useController = true
+
     hideSystemUi()
 
   }

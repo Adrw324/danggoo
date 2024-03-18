@@ -4,16 +4,10 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
-import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 // import 'package:audioplayers/audioplayers.dart';
 
 void main() {
-  VideoPlayerMediaKit.ensureInitialized(
-    macOS: true,
-    windows: true,
-    linux: true,
-  );
   runApp(
     ChangeNotifierProvider(
       create: (context) => GameData(),
@@ -37,7 +31,10 @@ class _TabletAppState extends State<TabletApp> {
       theme: ThemeData.dark(),
       home: TabletHomePage(),
       routes: {
-        '/quickStart': (context) => QuickStartScreen(playerCount: 2),
+        '/quickStart': (context) => QuickStartScreen(
+              playerCount: 2,
+              handicabScores: [0, 0],
+            ),
         '/setting': (context) => SettingScreen()
       },
     );
@@ -112,43 +109,36 @@ class TabletHomePage extends StatelessWidget {
         ),
       ),
       body: Center(
-        child: InkWell(
-          onTap: () {
-            _showPlayerCountDialog(context);
-            // Navigator.pushNamed(context, '/quickStart');
-          },
-          child: Container(
-            width: 200,
-            height: 200,
-            child: Center(
-              child: Text(
-                'Quick Start',
-                style: TextStyle(fontSize: 24, color: Colors.white),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            InkWell(
+              onTap: () {
+                _showPlayerCountDialog(context);
+                // Navigator.pushNamed(context, '/quickStart');
+              },
+              child: Container(
+                width: 200,
+                height: 200,
+                child: Center(
+                  child: Text(
+                    'Quick Start',
+                    style: TextStyle(fontSize: 24, color: Colors.white),
+                  ),
+                ),
+                decoration: BoxDecoration(
+                  border:
+                      Border.all(color: Colors.white, width: 2), // 하얀 테두리 추가
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 2), // 하얀 테두리 추가
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
+          ],
         ),
       ),
     );
   }
-
-  // void _showQuickStart(BuildContext context) {
-  // final _TabletAppState tabletAppState =
-  // context.findAncestorStateOfType<_TabletAppState>()!;
-  // final int tabletNumber = tabletAppState.tabletNumber;
-
-  // Navigator.push(
-  // context,
-  // MaterialPageRoute(
-  // builder: (context) =>
-  // QuickStartScreen(playerCount: 2, tabletNumber: tabletNumber),
-  // ),
-  // );
-  // }
 
   Future<void> _showPlayerCountDialog(BuildContext context) async {
     final int? count = await showDialog<int>(
@@ -173,14 +163,69 @@ class TabletHomePage extends StatelessWidget {
     );
 
     if (count != null) {
-      final _TabletAppState tabletAppState =
-          context.findAncestorStateOfType<_TabletAppState>()!;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => QuickStartScreen(playerCount: count),
-        ),
-      );
+      // Show dialog to set handi-tab scores for each player
+      _showHandiTabScoreDialog(context, count);
     }
+  }
+
+  Future<void> _showHandiTabScoreDialog(
+      BuildContext context, int playerCount) async {
+    List<int> handicabScores =
+        List.filled(playerCount, 0); // Initialize scores for each player to 0
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Set Handicab Scores'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(playerCount, (index) {
+              return ListTile(
+                title: Text('Player ${index + 1}'),
+                contentPadding: EdgeInsets.all(0),
+                trailing: Container(
+                  width: 80,
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      handicabScores[index] = int.tryParse(value) ?? 0;
+                    },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Score',
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Navigate to QuickStartScreen with playerCount and handiTabScores
+                Navigator.of(context).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuickStartScreen(
+                      playerCount: playerCount,
+                      handicabScores: handicabScores,
+                    ),
+                  ),
+                );
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

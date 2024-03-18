@@ -9,6 +9,9 @@ import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'player.dart';
+import 'package:presentation_displays/display.dart';
+import 'package:presentation_displays/displays_manager.dart';
+import 'package:presentation_displays/secondary_display.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -26,8 +29,9 @@ class _QuickStartWidgetState extends State<QuickStartWidget> {
 
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
+  final List<int> handicabScores;
 
-  QuickStartScreen({required this.playerCount});
+  QuickStartScreen({required this.playerCount, required this.handicabScores});
 
   @override
   _QuickStartScreenState createState() => _QuickStartScreenState();
@@ -130,8 +134,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                         })
                       : List.generate((widget.playerCount / 2).ceil(), (index) {
                           final playerIndex = index * 2;
-                          return _buildPlayerSection5(
-                              playerIndex, widget.playerCount);
+                          return _buildPlayerSection5(playerIndex,
+                              widget.playerCount, widget.handicabScores);
                         }),
                 ),
               ),
@@ -250,27 +254,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         ),
                                       ),
                                     ),
-
-                                  // ElevatedButton(onPressed: (){
-                                  //  setState(() {
-                                  //    if(colorChanged) {
-                                  //     colorChanged = false;
-                                  //   }
-                                  //   else {
-                                  //     colorChanged = true;
-                                  //   }
-                                  //  });
-                                  // },
-                                  // style: ElevatedButton.styleFrom(
-                                  //     backgroundColor: Colors.black,
-                                  // ),
-                                  // child: Padding(
-                                  //   padding: const EdgeInsets.all(15.0),
-                                  //   child: Text('CHANGE',
-                                  //                   style: TextStyle(
-                                  //                       fontSize: 50,
-                                  //                       color: Colors.white)),
-                                  // ))
                                 ],
                               ),
                             ],
@@ -304,8 +287,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       : List.generate((widget.playerCount / 2).floor(),
                           (index) {
                           final playerIndex = index * 2 + 1;
-                          return _buildPlayerSection5(
-                              playerIndex, widget.playerCount);
+                          return _buildPlayerSection5(playerIndex,
+                              widget.playerCount, widget.handicabScores);
                         }),
                 ),
               ),
@@ -323,13 +306,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
     _initialize();
+
+    print('HANDICAPS ' + '${widget.handicabScores}');
   }
 
   Future<void> _initialize() async {
-    // await _getDirectory();
-    // await _deleteFilesInDirectory(outputPath);
-    // _startConversion();
-    // await _waitForSegment();
+    await _getDirectory();
+    await _deleteFilesInDirectory(outputPath);
+    _startConversion();
+    await _waitForSegment();
     await _initializeController();
   }
 
@@ -343,28 +328,14 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   Future<void> _initializeController() async {
     print('Initializing Controller!!!');
 
-    // File file = File(outputPath + "/output.m3u8");
+    File file = File(outputPath + "/output.m3u8");
 
-    // if (await file.exists()) {
-    //   print('파일이 존재합니다.');
-    //   // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
-    // } else {
-    //   print('파일이 존재하지 않습니다.');
-    // }
-
-    // print('파일이 존재합니다.');
-
-    playerView = MyPlayerView(
-        video_url:
-            'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
-
-    // _controller = VideoPlayerController.file(File(outputPath + '/output.m3u8'))
-    //   ..initialize().then((_) {
-    //     _controller.play();
-    //     setState(() {
-    //       _isLoading = false;
-    //     });
-    //   });
+    if (await file.exists()) {
+      print('파일이 존재합니다.');
+      playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
+    } else {
+      print('파일이 존재하지 않습니다.');
+    }
 
     // playerView = MyPlayerView(
     //     video_url:
@@ -373,10 +344,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     setState(() {
       _isLoading = false;
     });
-
-    // setState(() {
-    //   _isLoading = false;
-    // });
   }
 
   Future<void> _getDirectory() async {
@@ -460,21 +427,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       print('Error deleting files: $e');
     }
   }
-
-  // void _enterFullScreen() {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //         builder: (context) => Scaffold(
-  //               body: Center(
-  //                 child: AspectRatio(
-  //                   aspectRatio: _controller.value.aspectRatio,
-  //                   child: VideoPlayer(_controller),
-  //                 ),
-  //               ),
-  //             )),
-  //   );
-  // }
 
   @override
   Future<void> dispose() async {
@@ -655,11 +607,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   void decrementButtonCount(int index) {
-    if (buttonCounts[index] > 0) {
-      setState(() {
-        buttonCounts[index]--;
-      });
-    }
+    setState(() {
+      buttonCounts[index]--;
+    });
   }
 
   void turnOffAll() {
@@ -671,7 +621,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     isPressed[5] = false;
   }
 
-  Widget _buildPlayerSection5(int index, int playerCount) {
+  Widget _buildPlayerSection5(
+      int index, int playerCount, List<int> handicabScores) {
     List<Color> colors = [
       Color.fromARGB(255, 255, 255, 255),
       Color.fromARGB(255, 255, 217, 0),
@@ -682,6 +633,29 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       // Color.fromARGB(255, 10, 147, 150),
       // Color.fromARGB(255, 233, 216, 166),
     ];
+
+    void checkWinner(int buttonCount, int handicap, int index) {
+      if (buttonCount >= handicap) {
+        // 팝업 표시
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Congratulations!'),
+              content: Text('Player ${index + 1} Win!'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
 
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 8;
@@ -707,14 +681,33 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
               children: [
                 Expanded(
                   flex: 1,
-                  child: Container(
-                    color: Color.fromRGBO(37, 37, 38, 0.973),
-                    child: Center(
-                      child: Text(
-                        'Player ${index + 1}',
-                        style: TextStyle(fontSize: playerFontSize),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Container(
+                          color: Color.fromRGBO(37, 37, 38, 0.973),
+                          child: Center(
+                            child: Text(
+                              'PLAYER ${index + 1}',
+                              style: TextStyle(fontSize: playerFontSize),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          color: Color.fromRGBO(22, 5, 213, 0.973),
+                          child: Center(
+                            child: Text(
+                              '${handicabScores[index]}',
+                              style: TextStyle(fontSize: playerFontSize),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -738,6 +731,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 2);
+                                            checkWinner(buttonCounts[index],
+                                                handicabScores[index], index);
                                           });
                                         } else {
                                           setState(() {
@@ -786,6 +781,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 3);
+                                            checkWinner(buttonCounts[index],
+                                                handicabScores[index], index);
                                           });
                                         } else {
                                           setState(() {
@@ -836,6 +833,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     if (isPressed[index]) {
                                       setState(() {
                                         incrementButtonCountBy(index, 1);
+                                        checkWinner(buttonCounts[index],
+                                            handicabScores[index], index);
                                       });
                                     } else {
                                       setState(() {
@@ -894,6 +893,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 5);
+                                            checkWinner(buttonCounts[index],
+                                                handicabScores[index], index);
                                           });
                                         } else {
                                           setState(() {
@@ -942,6 +943,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             decrementButtonCount(index);
+                                            checkWinner(buttonCounts[index],
+                                                handicabScores[index], index);
                                           });
                                         } else {
                                           setState(() {

@@ -39,8 +39,8 @@ dependencies:
   provider:
   flutter_ffmpeg: ^0.4.2
   path_provider: ^2.1.1
-  video_player: ^2.8.2
-  video_player_media_kit: ^1.0.5
+  presentation_displays: ^1.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
