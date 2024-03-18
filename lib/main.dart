@@ -41,7 +41,14 @@ class _TabletAppState extends State<TabletApp> {
   }
 }
 
-class TabletHomePage extends StatelessWidget {
+class TabletHomePage extends StatefulWidget {
+  @override
+  _TabletHomePageState createState() => _TabletHomePageState();
+}
+
+class _TabletHomePageState extends State<TabletHomePage> {
+  List<int> handicabScores = [];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,17 +59,17 @@ class TabletHomePage extends StatelessWidget {
               TextSpan(
                 text: 'NICE ',
                 style: TextStyle(
-                  color: Colors.white, // 하얀색
-                  fontSize: 20, // 원하는 폰트 크기로 조정
-                  fontWeight: FontWeight.bold, // 원하는 폰트 두께로 조정
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               TextSpan(
                 text: 'Q',
                 style: TextStyle(
-                  color: Colors.red, // 빨강색
-                  fontSize: 20, // 원하는 폰트 크기로 조정
-                  fontWeight: FontWeight.bold, // 원하는 폰트 두께로 조정
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -116,7 +123,6 @@ class TabletHomePage extends StatelessWidget {
             InkWell(
               onTap: () {
                 _showPlayerCountDialog(context);
-                // Navigator.pushNamed(context, '/quickStart');
               },
               child: Container(
                 width: 200,
@@ -128,8 +134,7 @@ class TabletHomePage extends StatelessWidget {
                   ),
                 ),
                 decoration: BoxDecoration(
-                  border:
-                      Border.all(color: Colors.white, width: 2), // 하얀 테두리 추가
+                  border: Border.all(color: Colors.white, width: 2),
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
@@ -163,67 +168,133 @@ class TabletHomePage extends StatelessWidget {
     );
 
     if (count != null) {
+      // Initialize scores for each player to 1
+      handicabScores = List.filled(count, 10);
       // Show dialog to set handi-tab scores for each player
-      _showHandiTabScoreDialog(context, count);
+      _showHandicabDialog(context, count);
     }
   }
 
-  Future<void> _showHandiTabScoreDialog(
+  Future<void> _showHandicabDialog(
       BuildContext context, int playerCount) async {
-    List<int> handicabScores =
-        List.filled(playerCount, 0); // Initialize scores for each player to 0
-
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Set Handicab Scores'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(playerCount, (index) {
-              return ListTile(
-                title: Text('Player ${index + 1}'),
-                contentPadding: EdgeInsets.all(0),
-                trailing: Container(
-                  width: 80,
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      handicabScores[index] = int.tryParse(value) ?? 0;
-                    },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Score',
-                    ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Set Handicabs'),
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.5,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(playerCount, (index) {
+                      return ListTile(
+                        title: Text('Player ${index + 1}'),
+                        contentPadding: EdgeInsets.all(0),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: ElevatedButton(
+                                  child: Text(
+                                    '- 1',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    if (handicabScores[index] > 1) {
+                                      setState(() {
+                                        handicabScores[index]--;
+                                      });
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.red, // 버튼의 배경색을 빨간색으로 설정
+                                  )),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: ElevatedButton(
+                                  child: Text(
+                                    '+ 1',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      handicabScores[index] += 1;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.blue, // 버튼의 배경색을 빨간색으로 설정
+                                  )),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: ElevatedButton(
+                                  child: Text(
+                                    '+ 5',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      handicabScores[index] += 5;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.blue, // 버튼의 배경색을 빨간색으로 설정
+                                  )),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(20.0, 0, 8.0, 0),
+                              child: Text('${handicabScores[index]}',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                  )),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ),
                 ),
-              );
-            }),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to QuickStartScreen with playerCount and handiTabScores
-                Navigator.of(context).pop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => QuickStartScreen(
-                      playerCount: playerCount,
-                      handicabScores: handicabScores,
-                    ),
-                  ),
-                );
-              },
-              child: Text('Save'),
-            ),
-          ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuickStartScreen(
+                          playerCount: playerCount,
+                          handicabScores: handicabScores,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
