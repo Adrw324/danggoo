@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Game {
   final int tableNum;
@@ -42,23 +43,44 @@ class GameData extends ChangeNotifier {
   String manager_uri = 'localhost:5157';
   String camera_uri = '';
 
+  Future<void> loadGameData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    tabletNumber = prefs.getInt('tabletNumber') ?? 1;
+    feePerMinute = prefs.getDouble('feePerMinute') ?? 1;
+    manager_uri = prefs.getString('managerUri') ?? 'localhost:5157';
+    camera_uri = prefs.getString('cameraUri') ?? '';
+    notifyListeners();
+  }
+
+  Future<void> saveGameData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('tabletNumber', tabletNumber);
+    await prefs.setDouble('feePerMinute', feePerMinute);
+    await prefs.setString('managerUri', manager_uri);
+    await prefs.setString('cameraUri', camera_uri);
+  }
+
   void updateTabletNumber(int newTabletNumber) {
     tabletNumber = newTabletNumber;
+    saveGameData();
     notifyListeners();
   }
 
   void updateFeePerMinute(double newFeePerMin) {
     feePerMinute = newFeePerMin;
+    saveGameData();
     notifyListeners();
   }
 
   void updateManagerUri(String newManagerUri) {
     manager_uri = newManagerUri;
+    saveGameData();
     notifyListeners();
   }
 
   void updateCameraUri(String newCameraUri) {
     camera_uri = newCameraUri;
+    saveGameData();
     notifyListeners();
   }
 }

@@ -5,9 +5,9 @@ import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
 
-// import 'package:audioplayers/audioplayers.dart';
-
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initApp();
   runApp(
     ChangeNotifierProvider(
       create: (context) => GameData(),
@@ -22,8 +22,6 @@ class TabletApp extends StatefulWidget {
 }
 
 class _TabletAppState extends State<TabletApp> {
-  int tabletNumber = 1;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -41,6 +39,11 @@ class _TabletAppState extends State<TabletApp> {
   }
 }
 
+Future<void> initApp() async {
+  final gameData = GameData(); // GameData 인스턴스 생성
+  await gameData.loadGameData(); // 데이터 로드
+}
+
 class TabletHomePage extends StatefulWidget {
   @override
   _TabletHomePageState createState() => _TabletHomePageState();
@@ -48,6 +51,13 @@ class TabletHomePage extends StatefulWidget {
 
 class _TabletHomePageState extends State<TabletHomePage> {
   List<int> handicabScores = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // 앱이 시작될 때 데이터를 로드
+    Provider.of<GameData>(context, listen: false).loadGameData();
+  }
 
   @override
   Widget build(BuildContext context) {

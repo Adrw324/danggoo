@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
@@ -51,7 +49,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   late FlutterFFmpeg _ffmpeg;
 
-  String inputPath =
+  late String inputPath =
       'rtsp://admin:a1234567@192.168.50.106:554/h264Preview_01_main';
 
   late String documentDirectory;
@@ -67,8 +65,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   bool _isLoading = true;
 
   Widget build(BuildContext context) {
-    final gameData = context.watch<GameData>();
-
     FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
 
     double screenHeight = MediaQuery.of(context).size.height;
@@ -77,6 +73,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     double PlaytimeFontSize = screenHeight / 8;
 
     List<Widget> playerSections = [];
+
+    final gameData = Provider.of<GameData>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -301,6 +299,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   @override
   void initState() {
     super.initState();
+
+    final gameData = Provider.of<GameData>(context, listen: false);
+
+    inputPath = gameData.camera_uri;
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 

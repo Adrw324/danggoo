@@ -1,10 +1,7 @@
-import 'dart:async';
-import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingScreen extends StatelessWidget {
   @override
@@ -32,7 +29,9 @@ class SettingScreen extends StatelessWidget {
                         content: DropdownButton<int>(
                           value: newValue,
                           onChanged: (int? value) {
-                            newValue = value!;
+                            if (value != null) {
+                              newValue = value;
+                            }
                           },
                           items: <int>[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
                               .map<DropdownMenuItem<int>>((int value) {
@@ -50,8 +49,10 @@ class SettingScreen extends StatelessWidget {
                             child: Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               gameData.updateTabletNumber(newValue);
+                              // 변경된 데이터를 SharedPreferences에 저장
+                              await gameData.saveGameData();
                               Navigator.pop(context);
                             },
                             child: Text('Save'),
@@ -90,8 +91,10 @@ class SettingScreen extends StatelessWidget {
                             child: Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               gameData.updateFeePerMinute(newValue);
+                              // 변경된 데이터를 SharedPreferences에 저장
+                              await gameData.saveGameData();
                               Navigator.pop(context);
                             },
                             child: Text('Save'),
@@ -128,8 +131,10 @@ class SettingScreen extends StatelessWidget {
                             child: Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               gameData.updateManagerUri(newValue);
+                              // 변경된 데이터를 SharedPreferences에 저장
+                              await gameData.saveGameData();
                               Navigator.pop(context);
                             },
                             child: Text('Save'),
@@ -166,8 +171,10 @@ class SettingScreen extends StatelessWidget {
                             child: Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               gameData.updateCameraUri(newValue);
+                              // 변경된 데이터를 SharedPreferences에 저장
+                              await gameData.saveGameData();
                               Navigator.pop(context);
                             },
                             child: Text('Save'),
