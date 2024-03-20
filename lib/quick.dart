@@ -6,6 +6,8 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'player.dart';
+import 'package:pinch_zoom/pinch_zoom.dart';
+import 'package:widget_zoom/widget_zoom.dart';
 import 'package:presentation_displays/display.dart';
 import 'package:presentation_displays/displays_manager.dart';
 import 'package:presentation_displays/secondary_display.dart';

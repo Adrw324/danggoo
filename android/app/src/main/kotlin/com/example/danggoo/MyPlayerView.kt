@@ -6,7 +6,7 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
+import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,7 +19,7 @@ import io.flutter.plugin.platform.PlatformView
 
 class MyPlayerView(private val context: Context, id: Int, creationParams: Map<String?, Any?>?,
 private val activity: Activity) : PlatformView {
-  private val linearLayout: LinearLayout = LinearLayout(context)
+  private val frameLayout: FrameLayout = FrameLayout(context)
   private var player: ExoPlayer? = null
   private var playWhenReady = true
   private var currentItem = 0
@@ -27,7 +27,7 @@ private val activity: Activity) : PlatformView {
   private var playerView: PlayerView
 
   override fun getView(): View {
-    return linearLayout
+    return frameLayout
   }
 
   override fun dispose() {
@@ -39,12 +39,12 @@ private val activity: Activity) : PlatformView {
     ViewGroup.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
       ViewGroup.LayoutParams.MATCH_PARENT)
-    linearLayout.layoutParams = layoutParams
+    frameLayout.layoutParams = layoutParams
 
     playerView = PlayerView(context)
     playerView.layoutParams = layoutParams
 
-    linearLayout.addView(playerView)
+    frameLayout.addView(playerView)
     setUpPlayer(creationParams?.get("url").toString())
 
   }
@@ -69,8 +69,6 @@ private val activity: Activity) : PlatformView {
         Log.d("MyPlayerView", "TouchEvent: $event")
         false
       }
-
-
       playerView.useController = true
     }
 
