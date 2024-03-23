@@ -6,7 +6,7 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.annotation.OptIn
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,7 +19,7 @@ import io.flutter.plugin.platform.PlatformView
 
 class MyPlayerView(private val context: Context, id: Int, creationParams: Map<String?, Any?>?,
 private val activity: Activity) : PlatformView {
-  private val frameLayout: FrameLayout = FrameLayout(context)
+  private val frameLayout: LinearLayout = LinearLayout(context)
   private var player: ExoPlayer? = null
   private var playWhenReady = true
   private var currentItem = 0
@@ -70,6 +70,8 @@ private val activity: Activity) : PlatformView {
         false
       }
       playerView.useController = true
+      playerView.setShowFastForwardButton(true)
+
     }
 
     hideSystemUi()

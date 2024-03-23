@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
+import 'package:media_kit/media_kit.dart'; // Provides [Player], [Media], [Playlist] etc.
+import 'package:media_kit_video/media_kit_video.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await initApp();
   runApp(
     ChangeNotifierProvider(

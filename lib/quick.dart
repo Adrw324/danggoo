@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
@@ -8,9 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'player.dart';
 import 'package:pinch_zoom/pinch_zoom.dart';
 import 'package:widget_zoom/widget_zoom.dart';
-import 'package:presentation_displays/display.dart';
-import 'package:presentation_displays/displays_manager.dart';
-import 'package:presentation_displays/secondary_display.dart';
+import 'package:chewie/chewie.dart';
+import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -58,13 +60,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   late String outputPath;
 
-  // VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(
-  //     'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
-  //   ..initialize();
-
-  late MyPlayerView playerView;
+  late final player = Player();
+  late final controller = VideoController(player);
 
   bool _isLoading = true;
+
+  bool isFullScreen = false;
 
   Widget build(BuildContext context) {
     FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
@@ -120,7 +121,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                     // border: Border.all(color: Colors.black),
                     ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: widget.playerCount < 5
                       ? List.generate((widget.playerCount / 2).ceil(), (index) {
                           final playerIndex = index * 2;
@@ -149,7 +150,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   child: Column(
                     children: [
                       Expanded(
-                        flex: 1,
+                        flex: 6,
                         child: Scaffold(
                           appBar: null,
                           body: Column(
@@ -163,7 +164,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         )
                                       : AspectRatio(
                                           aspectRatio: 16 / 9,
-                                          child: playerView),
+                                          child: Video(
+                                            controller: controller,
+                                          )),
                                 ),
                               ),
                             ],
@@ -171,7 +174,42 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                         ),
                       ),
                       Expanded(
-                        flex: 1,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  // 버튼 1이 눌렸을 때 실행되는 코드
+                                },
+                                child: Text('Button 1'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  // 버튼 2가 눌렸을 때 실행되는 코드
+                                },
+                                child: Text('Button 2'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  // 버튼 3이 눌렸을 때 실행되는 코드
+                                },
+                                child: Text('Button 3'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
+
+                                  _initialize();
+                                },
+                                child: Text('Reset'),
+                              ),
+                            ],
+                          ),
+                          flex: 1),
+                      Expanded(
+                        flex: 6,
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +309,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                     // border: Border.all(color: Colors.black),
                     ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: widget.playerCount < 5
                       ? List.generate((widget.playerCount / 2).floor(),
                           (index) {
@@ -335,18 +373,34 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     if (await file.exists()) {
       print('파일이 존재합니다.');
-      playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
+      // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
+      player.open(Media('file://' + outputPath + "/output.m3u8"));
+      setState(() {
+        _isLoading = false;
+      });
     } else {
       print('파일이 존재하지 않습니다.');
     }
 
+    // videoPlayerController =
+    //     VideoPlayerController.networkUrl(Uri.parse(outputPath + "/output.m3u8"))
+    //       ..initialize().then((_) {
+    //         chewieController = ChewieController(
+    //           videoPlayerController: videoPlayerController,
+    //           autoPlay: true,
+    //           looping: true,
+    //         );
+    //         playerWidget = Chewie(
+    //           controller: chewieController,
+    //         );
+    //         setState(() {
+    //           _isLoading = false;
+    //         });
+    //       });
+
     // playerView = MyPlayerView(
     //     video_url:
     //         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   Future<void> _getDirectory() async {
@@ -716,7 +770,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 Expanded(
                   flex: 4,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         flex: 1,
@@ -866,7 +920,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   ),
                                   backgroundColor: () {
                                     if (playerCount % 2 != 0) {
-                                      return Color.fromARGB(255, 255, 228, 168);
+                                      return Color.fromARGB(255, 255, 255, 255);
                                     } else {
                                       if (colorChanged)
                                         return colors[(index + 1) % 2];
@@ -1103,7 +1157,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   Expanded(
                     flex: 5,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           flex: 3,
@@ -1146,7 +1200,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     backgroundColor: () {
                                       if (playerCount % 2 != 0) {
                                         return Color.fromARGB(
-                                            255, 255, 228, 168);
+                                            255, 255, 255, 255);
                                       } else {
                                         if (colorChanged)
                                           return colors[(index + 1) % 2];
@@ -1492,7 +1546,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
               Expanded(
                 flex: 10,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       flex: 4,
