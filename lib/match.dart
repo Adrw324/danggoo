@@ -545,9 +545,7 @@ class _MatchScreenState extends State<MatchScreen> {
         decoration: BoxDecoration(
           border: Border.all(
             color:
-                (index != matchData.currentPlayer && !matchData.isTurnFinished)
-                    ? Colors.blue
-                    : Colors.black,
+                (index == matchData.currentPlayer) ? Colors.blue : Colors.black,
             width: 3,
           ),
           borderRadius: BorderRadius.circular(10),
@@ -556,25 +554,7 @@ class _MatchScreenState extends State<MatchScreen> {
         child: Column(
           children: [
             Expanded(
-              flex: 1,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      color: Color.fromRGBO(37, 37, 38, 0.973),
-                      child: Center(
-                        child: Text(
-                          'PLAYER ${index + 1}',
-                          style: TextStyle(fontSize: scoreFontSize / 2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 4,
+              flex: 3,
               child: Container(
                 width: double.infinity,
                 height: double.infinity,
@@ -584,24 +564,110 @@ class _MatchScreenState extends State<MatchScreen> {
                       if (index == matchData.currentPlayer) {
                         if (!matchData.isTurnFinished) {
                           matchData.finishTurn();
-                        } else {
-                          matchData.endTurn();
+                          matchData.endTurn(); // 바로 다음 플레이어로 넘어가도록 수정
                         }
-                      } else {
-                        matchData.incrementScore(index);
                       }
                     });
                   },
-                  child: Text(
-                    '$score',
-                    style:
-                        TextStyle(fontSize: scoreFontSize, color: Colors.black),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'PLAYER ${index + 1}', // 플레이어 이름 섹션 추가
+                        style: TextStyle(
+                            fontSize: scoreFontSize / 2, color: Colors.black),
+                      ),
+                      Text(
+                        '$score',
+                        style: TextStyle(
+                            fontSize: scoreFontSize, color: Colors.black),
+                      ),
+                    ],
                   ),
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(),
                     backgroundColor: Colors.yellow,
                   ),
                 ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (index == 0) ...[
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Average',
+                            style: TextStyle(
+                                fontSize: scoreFontSize / 3,
+                                color: Colors.white)),
+                        Text('Handicap',
+                            style: TextStyle(
+                                fontSize: scoreFontSize / 3,
+                                color: Colors.white)),
+                      ],
+                    ),
+                    if (matchData.currentPlayer != 0) // 현재 플레이어가 아니면 +1 버튼 표시
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            matchData.incrementScore(1); // Player 2의 점수 증가
+                          });
+                        },
+                        child: Text(
+                          '+1',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 2, color: Colors.black),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(),
+                          backgroundColor: Colors.yellow,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: scoreFontSize * 1.2,
+                      ), // 공간 차지용 빈 컨테이너
+                  ] else ...[
+                    if (matchData.currentPlayer != 1) // 현재 플레이어가 아니면 +1 버튼 표시
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            matchData.incrementScore(0); // Player 1의 점수 증가
+                          });
+                        },
+                        child: Text(
+                          '+1',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 2, color: Colors.black),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(),
+                          backgroundColor: Colors.white,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: scoreFontSize * 1.2,
+                      ), // 공간 차지용 빈 컨테이너
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Average',
+                            style: TextStyle(
+                                fontSize: scoreFontSize / 3,
+                                color: Colors.white)),
+                        Text('Handicap',
+                            style: TextStyle(
+                                fontSize: scoreFontSize / 3,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
@@ -643,9 +709,8 @@ class MatchData with ChangeNotifier {
 
   void incrementScore(int playerIndex) {
     if (!_isTurnFinished) {
-      int opponentIndex = playerIndex == 0 ? 1 : 0;
-      _scores[opponentIndex]++;
-      _undoStack.add({'playerIndex': opponentIndex, 'score': 1});
+      _scores[playerIndex]++;
+      _undoStack.add({'playerIndex': playerIndex, 'score': 1});
       notifyListeners();
     }
   }
@@ -680,8 +745,8 @@ class MatchData with ChangeNotifier {
         _scores[playerIndex] -= score;
       } else if (lastAction['action'] == 1) {
         _isTurnFinished = false;
+        _currentPlayer = _currentPlayer == 0 ? 1 : 0; // 턴 변경
       } else if (lastAction['action'] == 'endInning') {
-        _currentPlayer = _currentPlayer == 0 ? 1 : 0;
         _inning--;
         if (_inningHistory.isNotEmpty) {
           _inningHistory.removeLast();
