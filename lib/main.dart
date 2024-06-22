@@ -1,18 +1,21 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'services/web_socket_service.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
-import 'match.dart'; // 추가된 MatchScreen import
+import 'match.dart'; // MatchScreen import 추가
+import 'services/web_socket_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initApp();
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => GameData(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => GameData()),
+        ChangeNotifierProvider(
+            create: (context) => MatchData()), // MatchData provider 추가
+      ],
       child: TabletApp(),
     ),
   );
@@ -37,7 +40,7 @@ class _TabletAppState extends State<TabletApp> {
               isHandicap: false,
             ),
         '/setting': (context) => SettingScreen(),
-        '/match': (context) => MatchScreen(), // 추가된 MatchScreen 경로
+        '/match': (context) => MatchScreen(), // MatchScreen 경로 추가
       },
     );
   }
@@ -62,16 +65,16 @@ class _TabletHomePageState extends State<TabletHomePage> {
   @override
   void initState() {
     super.initState();
-    int tableId = Provider.of<GameData>(context, listen: false).tabletNumber;
-    print("Initializing WebSocketService with tableId: $tableId");
-    _webSocketService = WebSocketService(tableId, '192.168.50.217:5157');
-    _webSocketService.statusStream.listen((status) {
-      print("Received status update: $status");
-      setState(() {
-        _status = status;
-      });
-    });
-    _webSocketService.connect();
+    // int tableId = Provider.of<GameData>(context, listen: false).tabletNumber;
+    // print("Initializing WebSocketService with tableId: $tableId");
+    // _webSocketService = WebSocketService(tableId, '192.168.50.217:5157');
+    // _webSocketService.statusStream.listen((status) {
+    //   print("Received status update: $status");
+    //   setState(() {
+    //     _status = status;
+    //   });
+    // });
+    // _webSocketService.connect();
     Provider.of<GameData>(context, listen: false).loadGameData();
   }
 
@@ -149,7 +152,7 @@ class _TabletHomePageState extends State<TabletHomePage> {
               },
             ),
             ListTile(
-              title: Text('New Match'), // 추가된 New Match 리스트 항목
+              title: Text('New Match'), // New Match 리스트 항목 추가
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/match'); // MatchScreen으로 이동
@@ -161,16 +164,15 @@ class _TabletHomePageState extends State<TabletHomePage> {
       body: Row(
         children: [
           Expanded(
-            flex: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/back1.jpg'),
-                  fit: BoxFit.cover,
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/back1.jpg'),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            ),
-          ),
+              )),
           Expanded(
             flex: 1,
             child: Center(
@@ -178,51 +180,44 @@ class _TabletHomePageState extends State<TabletHomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          _showPlayerCountDialog(context);
-                        },
-                        child: Container(
-                          width: 135,
-                          height: 135,
-                          child: Center(
-                            child: Text(
-                              'QUICK' + '\n' + 'START',
-                              style:
-                                  TextStyle(fontSize: 32, color: Colors.white),
-                            ),
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white, width: 2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                  InkWell(
+                    onTap: () {
+                      _showPlayerCountDialog(context);
+                    },
+                    child: Container(
+                      width: 135,
+                      height: 135,
+                      child: Center(
+                        child: Text(
+                          'QUICK' + '\n' + 'START',
+                          style: TextStyle(fontSize: 32, color: Colors.white),
                         ),
                       ),
-                      SizedBox(width: 20),
-                      InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/match');
-                        },
-                        child: Container(
-                          width: 135,
-                          height: 135,
-                          child: Center(
-                            child: Text(
-                              'NEW' + '\n' + 'MATCH',
-                              style:
-                                  TextStyle(fontSize: 32, color: Colors.white),
-                            ),
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white, width: 2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/match');
+                    },
+                    child: Container(
+                      width: 135,
+                      height: 135,
+                      child: Center(
+                        child: Text(
+                          'NEW' + '\n' + 'MATCH',
+                          style: TextStyle(fontSize: 32, color: Colors.white),
                         ),
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                   SizedBox(height: 20),
                   Text(

@@ -45,7 +45,7 @@ class _MatchScreenState extends State<MatchScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 15;
     double playtimeFontSize = screenHeight / 20;
-    final gameData = Provider.of<GameData>(context);
+    final matchData = Provider.of<MatchData>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -87,7 +87,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: _buildPlayerSection(0, buttonCounts),
+                    child: _buildPlayerSection(0, matchData.scores[0]),
                   ),
                   Expanded(
                     flex: 1,
@@ -95,7 +95,7 @@ class _MatchScreenState extends State<MatchScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Inning: $inning',
+                          'Inning: ${matchData.inning}',
                           style: TextStyle(fontSize: playtimeFontSize),
                         ),
                         SizedBox(height: 16),
@@ -108,7 +108,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   ),
                   Expanded(
                     flex: 2,
-                    child: _buildPlayerSection(1, buttonCounts),
+                    child: _buildPlayerSection(1, matchData.scores[1]),
                   ),
                 ],
               ),
@@ -202,7 +202,7 @@ class _MatchScreenState extends State<MatchScreen> {
                               backgroundColor:
                                   Color.fromRGBO(37, 37, 38, 0.973),
                             ),
-                            onPressed: () => startGame(gameData),
+                            onPressed: () => startGame(matchData),
                             child: Padding(
                               padding: const EdgeInsets.all(15.0),
                               child: Container(
@@ -219,7 +219,7 @@ class _MatchScreenState extends State<MatchScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.redAccent,
                             ),
-                            onPressed: () => finishGame(gameData),
+                            onPressed: () => finishGame(matchData),
                             child: Padding(
                               padding: const EdgeInsets.all(15.0),
                               child: Container(
@@ -239,7 +239,11 @@ class _MatchScreenState extends State<MatchScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey,
                               ),
-                              onPressed: () {},
+                              onPressed: () {
+                                setState(() {
+                                  matchData.undo();
+                                });
+                              },
                               child: Padding(
                                 padding: const EdgeInsets.all(15.0),
                                 child: Container(
@@ -342,15 +346,7 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<void> _initialize() async {
     await _getDirectory();
     await _deleteFilesInDirectory(outputPath);
-    // _startConversion();
-    // await _waitForSegment();
     await _initializeController();
-  }
-
-  Future<void> _waitForSegment() async {
-    while (!(await isSegmentGenerated())) {
-      await Future.delayed(Duration(seconds: 1));
-    }
   }
 
   Future<void> _initializeController() async {
@@ -369,12 +365,6 @@ class _MatchScreenState extends State<MatchScreen> {
     outputPath = '$documentDirectory/ffmpeg_output';
   }
 
-  Future<void> _startConversion() async {
-    await Directory(outputPath).create(recursive: true);
-    _ffmpeg = FlutterFFmpeg();
-    _runFFmpeg(inputPath, outputPath);
-  }
-
   Future<bool> isSegmentGenerated() async {
     Directory directory = Directory(outputPath);
     if (await directory.exists()) {
@@ -391,36 +381,6 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<String> _getDocumentDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
-  }
-
-  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
-    List<String> arguments = [
-      '-i',
-      inputPath,
-      '-c:v',
-      'libx264',
-      '-an',
-      '-threads',
-      '2',
-      '-preset',
-      'ultrafast',
-      '-f',
-      'hls',
-      '-s',
-      '960x540',
-      '-hls_time',
-      '4',
-      '-crf',
-      '28',
-      '-hls_playlist_type',
-      'event',
-      '-hls_list_size',
-      '0',
-      '-hls_segment_filename',
-      '$outputPath/output_%03d.ts',
-      '$outputPath/output.m3u8',
-    ];
-    return await _ffmpeg.executeWithArguments(arguments);
   }
 
   Future<void> _deleteFilesInDirectory(String directoryPath) async {
@@ -450,7 +410,7 @@ class _MatchScreenState extends State<MatchScreen> {
     super.dispose();
   }
 
-  void startGame(GameData gameData) {
+  void startGame(MatchData matchData) {
     if (isTimerRunning) {
       return;
     }
@@ -465,7 +425,7 @@ class _MatchScreenState extends State<MatchScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _startGameConfirmed(gameData);
+                _startGameConfirmed(matchData);
                 isGameStarted = true;
               },
               child: Text('Confirm'),
@@ -482,27 +442,14 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
-  void _startGameConfirmed(GameData gameData) {
+  void _startGameConfirmed(MatchData matchData) {
     DateTime today = DateTime.now();
     gameStartTime = DateTime.now();
-    int table = gameData.tabletNumber;
-    Game game = Game(
-      tableNum: table,
-      date: today.toIso8601String(),
-      start: gameStartTime.toIso8601String(),
-      end: gameStartTime.toIso8601String(),
-      playtime: 0,
-      fee: 0,
-      finished: false,
-    );
-
-    GameDataSender gameDataSender = GameDataSender();
-    gameDataSender.sendGameData(game, gameData);
-
+    matchData.startGame(today, gameStartTime);
     startTimer();
   }
 
-  void finishGame(GameData gameData) {
+  void finishGame(MatchData matchData) {
     if (!isTimerRunning) {
       return;
     }
@@ -517,7 +464,7 @@ class _MatchScreenState extends State<MatchScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _finishGameConfirmed(gameData);
+                _finishGameConfirmed(matchData);
                 isGameStarted = false;
               },
               child: Text('Confirm'),
@@ -534,28 +481,11 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
-  void _finishGameConfirmed(GameData gameData) {
+  void _finishGameConfirmed(MatchData matchData) {
     DateTime today = DateTime.now();
     DateTime end = DateTime.now();
-    int table = gameData.tabletNumber;
-    double fpm = gameData.feePerMinute;
-
-    Duration timeDifference = end.difference(gameStartTime);
-    int minutesDifference = timeDifference.inMinutes;
-
-    Game game = Game(
-      tableNum: table,
-      date: today.toIso8601String(),
-      start: gameStartTime.toIso8601String(),
-      end: end.toIso8601String(),
-      playtime: minutesDifference,
-      fee: minutesDifference * fpm,
-      finished: true,
-    );
-
-    GameDataSender gameDataSender = GameDataSender();
-    gameDataSender.sendGameData(game, gameData);
-
+    matchData.finishGame(today, gameStartTime, end);
+    matchData.resetMatchData(); // 매치 데이터 초기화
     finish();
     Navigator.pop(context);
   }
@@ -603,42 +533,23 @@ class _MatchScreenState extends State<MatchScreen> {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  Future<void> incrementButtonCountBy(int index) async {
-    setState(() {
-      buttonCounts[index] += 1;
-    });
-    _checkTurn();
-    checkWinner();
-  }
-
-  void turnOffAll() {
-    isAnyButtonOn = false;
-  }
-
-  void _checkTurn() {
-    setState(() {
-      if (currentPlayer == 0) {
-        currentPlayer = 1;
-      } else {
-        currentPlayer = 0;
-        inning++;
-      }
-    });
-  }
-
-  void checkWinner() {
-    // 빈 함수
-  }
-
-  Widget _buildPlayerSection(int index, List<int> buttonCounts) {
+  Widget _buildPlayerSection(int index, int score) {
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 15;
+
+    final matchData = Provider.of<MatchData>(context);
 
     return Center(
       child: Container(
         padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
+          border: Border.all(
+            color:
+                (index != matchData.currentPlayer && !matchData.isTurnFinished)
+                    ? Colors.blue
+                    : Colors.black,
+            width: 3,
+          ),
           borderRadius: BorderRadius.circular(10),
           color: Colors.transparent,
         ),
@@ -669,18 +580,20 @@ class _MatchScreenState extends State<MatchScreen> {
                 height: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (isAnyButtonOn) {
-                      setState(() {
-                        incrementButtonCountBy(index);
-                      });
-                    } else {
-                      setState(() {
-                        isAnyButtonOn = true;
-                      });
-                    }
+                    setState(() {
+                      if (index == matchData.currentPlayer) {
+                        if (!matchData.isTurnFinished) {
+                          matchData.finishTurn();
+                        } else {
+                          matchData.endTurn();
+                        }
+                      } else {
+                        matchData.incrementScore(index);
+                      }
+                    });
                   },
                   child: Text(
-                    '${buttonCounts[index]}',
+                    '$score',
                     style:
                         TextStyle(fontSize: scoreFontSize, color: Colors.black),
                   ),
@@ -712,5 +625,87 @@ class DiagonalClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) {
     return false;
+  }
+}
+
+class MatchData with ChangeNotifier {
+  List<int> _scores = [0, 0];
+  List<Map<String, dynamic>> _inningHistory = []; // 이닝 기록
+  int _currentPlayer = 0; // 0: Player 1, 1: Player 2
+  bool _isTurnFinished = false; // 현재 턴 종료 여부
+  List<Map<String, dynamic>> _undoStack = []; // 언두 스택
+  int _inning = 1; // 현재 이닝
+
+  List<int> get scores => _scores;
+  int get currentPlayer => _currentPlayer;
+  int get inning => _inning;
+  bool get isTurnFinished => _isTurnFinished; // 현재 턴 종료 여부 가져오기
+
+  void incrementScore(int playerIndex) {
+    if (!_isTurnFinished) {
+      int opponentIndex = playerIndex == 0 ? 1 : 0;
+      _scores[opponentIndex]++;
+      _undoStack.add({'playerIndex': opponentIndex, 'score': 1});
+      notifyListeners();
+    }
+  }
+
+  void finishTurn() {
+    if (!_isTurnFinished) {
+      _isTurnFinished = true;
+      _undoStack.add({'action': 1}); // 턴 종료 액션 추가
+      notifyListeners();
+    }
+  }
+
+  void endTurn() {
+    if (_isTurnFinished) {
+      _currentPlayer = _currentPlayer == 0 ? 1 : 0;
+      if (_currentPlayer == 0) {
+        _inning++;
+        _inningHistory.add({'inning': _inning, 'scores': List.from(_scores)});
+        _undoStack.add({'action': 'endInning'});
+      }
+      _isTurnFinished = false;
+      notifyListeners();
+    }
+  }
+
+  void undo() {
+    if (_undoStack.isNotEmpty) {
+      Map<String, dynamic> lastAction = _undoStack.removeLast();
+      if (lastAction.containsKey('score')) {
+        int playerIndex = lastAction['playerIndex']!;
+        int score = lastAction['score']!;
+        _scores[playerIndex] -= score;
+      } else if (lastAction['action'] == 1) {
+        _isTurnFinished = false;
+      } else if (lastAction['action'] == 'endInning') {
+        _currentPlayer = _currentPlayer == 0 ? 1 : 0;
+        _inning--;
+        if (_inningHistory.isNotEmpty) {
+          _inningHistory.removeLast();
+        }
+      }
+      notifyListeners();
+    }
+  }
+
+  void resetMatchData() {
+    _scores = [0, 0];
+    _inningHistory.clear();
+    _currentPlayer = 0;
+    _isTurnFinished = false;
+    _undoStack.clear();
+    _inning = 1;
+    notifyListeners();
+  }
+
+  void startGame(DateTime today, DateTime gameStartTime) {
+    // Game starting logic here
+  }
+
+  void finishGame(DateTime today, DateTime gameStartTime, DateTime end) {
+    // Game finishing logic here
   }
 }
