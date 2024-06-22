@@ -6,13 +6,11 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
-import 'player.dart';
-import 'package:pinch_zoom/pinch_zoom.dart';
-import 'package:widget_zoom/widget_zoom.dart';
-import 'package:chewie/chewie.dart';
-import 'package:video_player/video_player.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+
+import 'package:flutter/services.dart';
+import 'package:soundpool/soundpool.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -31,8 +29,12 @@ class _QuickStartWidgetState extends State<QuickStartWidget> {
 class QuickStartScreen extends StatefulWidget {
   final int playerCount;
   final List<int> handicabScores;
+  final bool isHandicap;
 
-  QuickStartScreen({required this.playerCount, required this.handicabScores});
+  QuickStartScreen(
+      {required this.playerCount,
+      required this.handicabScores,
+      required this.isHandicap});
 
   @override
   _QuickStartScreenState createState() => _QuickStartScreenState();
@@ -65,7 +67,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   bool _isLoading = true;
 
-  bool isFullScreen = false;
+  Soundpool pool = Soundpool(streamType: StreamType.notification);
+  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0];
 
   Widget build(BuildContext context) {
     FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
@@ -126,16 +129,25 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       ? List.generate((widget.playerCount / 2).ceil(), (index) {
                           final playerIndex = index * 2;
                           if (widget.playerCount == 2)
-                            return _buildPlayerSection(playerIndex,
-                                widget.playerCount, widget.handicabScores);
+                            return _buildPlayerSection(
+                                playerIndex,
+                                widget.playerCount,
+                                widget.handicabScores,
+                                widget.isHandicap);
                           else
-                            return _buildPlayerSection3(playerIndex,
-                                widget.playerCount, widget.handicabScores);
+                            return _buildPlayerSection3(
+                                playerIndex,
+                                widget.playerCount,
+                                widget.handicabScores,
+                                widget.isHandicap);
                         })
                       : List.generate((widget.playerCount / 2).ceil(), (index) {
                           final playerIndex = index * 2;
-                          return _buildPlayerSection5(playerIndex,
-                              widget.playerCount, widget.handicabScores);
+                          return _buildPlayerSection5(
+                              playerIndex,
+                              widget.playerCount,
+                              widget.handicabScores,
+                              widget.isHandicap);
                         }),
                 ),
               ),
@@ -150,7 +162,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   child: Column(
                     children: [
                       Expanded(
-                        flex: 6,
+                        flex: 7,
                         child: Scaffold(
                           appBar: null,
                           body: Column(
@@ -166,7 +178,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           aspectRatio: 16 / 9,
                                           child: Video(
                                             controller: controller,
-                                          )),
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
@@ -174,42 +187,62 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                         ),
                       ),
                       Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              TextButton(
-                                onPressed: () {
-                                  // 버튼 1이 눌렸을 때 실행되는 코드
-                                },
-                                child: Text('Button 1'),
+                        flex: 1,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton(
+                              onPressed: () async {
+                                // 버튼 2가 눌렸을 때 실행되는 코드
+                                await player.seek(player.state.position -
+                                    Duration(seconds: 5));
+                              },
+                              child: Icon(Icons.replay_5,
+                                  size: 35, color: Colors.white),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                // 버튼 1이 눌렸을 때 실행되는 코드
+                                await player.seek(player.state.position +
+                                    Duration(seconds: 5));
+                              },
+                              child: Icon(Icons.forward_5,
+                                  size: 35, color: Colors.white),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                // 버튼 3이 눌렸을 때 실행되는 코드
+                                await player.seek(player.state.duration);
+                              },
+                              child: Text(
+                                'LIVE',
+                                style: TextStyle(
+                                  color: Colors.white, // 텍스트 버튼 색상 변경
+                                  fontSize: 25, // 텍스트 버튼 폰트 크기 변경
+                                ),
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  // 버튼 2가 눌렸을 때 실행되는 코드
-                                },
-                                child: Text('Button 2'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  // 버튼 3이 눌렸을 때 실행되는 코드
-                                },
-                                child: Text('Button 3'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isLoading = true;
-                                  });
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLoading = true;
+                                });
 
-                                  _initialize();
-                                },
-                                child: Text('Reset'),
+                                _initialize();
+                              },
+                              child: Text(
+                                'Reset',
+                                style: TextStyle(
+                                  color: Colors.teal, // 텍스트 버튼 색상 변경
+                                  fontSize: 25, // 텍스트 버튼 폰트 크기 변경
+                                ),
                               ),
-                            ],
-                          ),
-                          flex: 1),
+                            ),
+                          ],
+                        ),
+                      ),
                       Expanded(
-                        flex: 6,
+                        flex: 7,
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -315,17 +348,26 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           (index) {
                           final playerIndex = index * 2 + 1;
                           if (widget.playerCount == 2)
-                            return _buildPlayerSection(playerIndex,
-                                widget.playerCount, widget.handicabScores);
+                            return _buildPlayerSection(
+                                playerIndex,
+                                widget.playerCount,
+                                widget.handicabScores,
+                                widget.isHandicap);
                           else
-                            return _buildPlayerSection3(playerIndex,
-                                widget.playerCount, widget.handicabScores);
+                            return _buildPlayerSection3(
+                                playerIndex,
+                                widget.playerCount,
+                                widget.handicabScores,
+                                widget.isHandicap);
                         })
                       : List.generate((widget.playerCount / 2).floor(),
                           (index) {
                           final playerIndex = index * 2 + 1;
-                          return _buildPlayerSection5(playerIndex,
-                              widget.playerCount, widget.handicabScores);
+                          return _buildPlayerSection5(
+                              playerIndex,
+                              widget.playerCount,
+                              widget.handicabScores,
+                              widget.isHandicap);
                         }),
                 ),
               ),
@@ -346,9 +388,43 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
+    _settingButtonSound();
+
     _initialize();
 
     print('HANDICAPS ' + '${widget.handicabScores}');
+  }
+
+  Future<void> _settingButtonSound() async {
+    soundId[0] = await rootBundle
+        .load("assets/woodclick.wav")
+        .then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[1] =
+        await rootBundle.load("assets/1p.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[2] =
+        await rootBundle.load("assets/2p.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[3] =
+        await rootBundle.load("assets/3p.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[4] =
+        await rootBundle.load("assets/4p.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[5] =
+        await rootBundle.load("assets/5p.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[6] =
+        await rootBundle.load("assets/winner.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
   }
 
   Future<void> _initialize() async {
@@ -381,26 +457,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     } else {
       print('파일이 존재하지 않습니다.');
     }
-
-    // videoPlayerController =
-    //     VideoPlayerController.networkUrl(Uri.parse(outputPath + "/output.m3u8"))
-    //       ..initialize().then((_) {
-    //         chewieController = ChewieController(
-    //           videoPlayerController: videoPlayerController,
-    //           autoPlay: true,
-    //           looping: true,
-    //         );
-    //         playerWidget = Chewie(
-    //           controller: chewieController,
-    //         );
-    //         setState(() {
-    //           _isLoading = false;
-    //         });
-    //       });
-
-    // playerView = MyPlayerView(
-    //     video_url:
-    //         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4');
   }
 
   Future<void> _getDirectory() async {
@@ -497,6 +553,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         print('Error during dispose: $e');
       }
     });
+
+    player.dispose();
+    pool.dispose();
 
     print('Disposed!');
 
@@ -657,13 +716,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  void incrementButtonCountBy(int index, int count) {
+  Future<void> incrementButtonCountBy(int index, int count) async {
     setState(() {
       buttonCounts[index] += count;
     });
   }
 
-  void decrementButtonCount(int index) {
+  Future<void> decrementButtonCount(int index) async {
     setState(() {
       buttonCounts[index]--;
     });
@@ -679,7 +738,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Widget _buildPlayerSection5(
-      int index, int playerCount, List<int> handicabScores) {
+      int index, int playerCount, List<int> handicabScores, bool isHandicap) {
     List<Color> colors = [
       Color.fromARGB(255, 255, 255, 255),
       Color.fromARGB(255, 255, 217, 0),
@@ -691,21 +750,49 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       // Color.fromARGB(255, 233, 216, 166),
     ];
 
-    void checkWinner(int buttonCount, int handicap, int index) {
+    Future<void> checkWinner(
+        int buttonCount, int handicap, int index, bool isHandicap) async {
+      int streamId0 = await pool.play(soundId[0]);
+      if (!isHandicap) return;
+      if (handicap - buttonCount == 5) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[5]);
+      } else if (handicap - buttonCount == 4) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[4]);
+      } else if (handicap - buttonCount == 3) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[3]);
+      } else if (handicap - buttonCount == 2) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[2]);
+      } else if (handicap - buttonCount == 1) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[1]);
+      }
       if (buttonCount >= handicap) {
         // 팝업 표시
+        int streamId = await pool.play(soundId[6]);
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Congratulations!'),
-              content: Text('Player ${index + 1} Win!'),
+              content: Padding(
+                padding: const EdgeInsets.all(30.0),
+                child: Text('PLAYER ${index + 1} Win !!!',
+                    style: TextStyle(fontSize: 100)),
+              ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('OK'),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'CLOSE',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -715,7 +802,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
 
     double screenHeight = MediaQuery.of(context).size.height;
-    double scoreFontSize = screenHeight / 8;
+    double scoreFontSize = screenHeight / 10;
     double scoreBtnFontSize = screenHeight / 50;
     double playerFontSize = screenHeight / 30;
     return Center(
@@ -779,7 +866,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             Expanded(
                               flex: 1,
                               child: Padding(
-                                padding: const EdgeInsets.all(3.0),
+                                padding: const EdgeInsets.all(1.0),
                                 child: AspectRatio(
                                   aspectRatio: 1,
                                   child: ElevatedButton(
@@ -788,8 +875,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 2);
-                                            checkWinner(buttonCounts[index],
-                                                handicabScores[index], index);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
                                           });
                                         } else {
                                           setState(() {
@@ -814,9 +904,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     ),
                                     style: ElevatedButton.styleFrom(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(5.0),
-                                        ),
+                                            // borderRadius:
+                                            // BorderRadius.circular(5.0),
+                                            ),
                                         backgroundColor:
                                             Color.fromARGB(1, 2, 52, 161)
                                         // side: BorderSide(
@@ -829,7 +919,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             Expanded(
                               flex: 1,
                               child: Padding(
-                                padding: const EdgeInsets.all(3.0),
+                                padding: const EdgeInsets.all(1.0),
                                 child: AspectRatio(
                                   aspectRatio: 1,
                                   child: ElevatedButton(
@@ -838,8 +928,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 3);
-                                            checkWinner(buttonCounts[index],
-                                                handicabScores[index], index);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
                                           });
                                         } else {
                                           setState(() {
@@ -865,7 +958,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius.circular(5.0),
+                                            BorderRadius.circular(1.0),
                                       ),
                                       backgroundColor:
                                           Color.fromARGB(1, 2, 52, 161),
@@ -890,8 +983,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     if (isPressed[index]) {
                                       setState(() {
                                         incrementButtonCountBy(index, 1);
-                                        checkWinner(buttonCounts[index],
-                                            handicabScores[index], index);
+                                        checkWinner(
+                                            buttonCounts[index],
+                                            handicabScores[index],
+                                            index,
+                                            isHandicap);
                                       });
                                     } else {
                                       setState(() {
@@ -916,8 +1012,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5.0),
-                                  ),
+                                      // borderRadius: BorderRadius.circular(5.0),
+                                      ),
                                   backgroundColor: () {
                                     if (playerCount % 2 != 0) {
                                       return Color.fromARGB(255, 255, 255, 255);
@@ -941,7 +1037,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             Expanded(
                               flex: 1,
                               child: Padding(
-                                padding: const EdgeInsets.all(3.0),
+                                padding: const EdgeInsets.all(1.0),
                                 child: AspectRatio(
                                   aspectRatio: 1,
                                   child: ElevatedButton(
@@ -950,8 +1046,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             incrementButtonCountBy(index, 5);
-                                            checkWinner(buttonCounts[index],
-                                                handicabScores[index], index);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
                                           });
                                         } else {
                                           setState(() {
@@ -976,9 +1075,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     ),
                                     style: ElevatedButton.styleFrom(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(5.0),
-                                        ),
+                                            // borderRadius:
+                                            //     BorderRadius.circular(5.0),
+                                            ),
                                         backgroundColor:
                                             Color.fromARGB(1, 2, 52, 161)
                                         // side: BorderSide(
@@ -1000,8 +1099,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         if (isPressed[index]) {
                                           setState(() {
                                             decrementButtonCount(index);
-                                            checkWinner(buttonCounts[index],
-                                                handicabScores[index], index);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
                                           });
                                         } else {
                                           setState(() {
@@ -1026,9 +1128,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     ),
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(5.0),
-                                      ),
+                                          // borderRadius:
+                                          //     BorderRadius.circular(5.0),
+                                          ),
                                       backgroundColor:
                                           Color.fromARGB(222, 255, 132, 0),
                                       // side: BorderSide(
@@ -1053,7 +1155,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Widget _buildPlayerSection3(
-      int index, int playerCount, List<int> handicabScores) {
+      int index, int playerCount, List<int> handicabScores, bool isHandicap) {
     List<Color> colors = [
       Color.fromARGB(255, 255, 255, 255),
       Color.fromARGB(255, 255, 217, 0),
@@ -1065,21 +1167,49 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       // Color.fromARGB(255, 233, 216, 166),
     ];
 
-    void checkWinner(int buttonCount, int handicap, int index) {
+    Future<void> checkWinner(
+        int buttonCount, int handicap, int index, bool isHandicap) async {
+      int streamId0 = await pool.play(soundId[0]);
+      if (!isHandicap) return;
+      if (handicap - buttonCount == 5) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[5]);
+      } else if (handicap - buttonCount == 4) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[4]);
+      } else if (handicap - buttonCount == 3) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[3]);
+      } else if (handicap - buttonCount == 2) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[2]);
+      } else if (handicap - buttonCount == 1) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[1]);
+      }
       if (buttonCount >= handicap) {
         // 팝업 표시
+        int streamId = await pool.play(soundId[6]);
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Congratulations!'),
-              content: Text('Player ${index + 1} Win!'),
+              content: Padding(
+                padding: const EdgeInsets.all(30.0),
+                child: Text('PLAYER ${index + 1} Win !!!',
+                    style: TextStyle(fontSize: 100)),
+              ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('OK'),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'CLOSE',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -1170,8 +1300,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       if (isPressed[index]) {
                                         setState(() {
                                           incrementButtonCountBy(index, 1);
-                                          checkWinner(buttonCounts[index],
-                                              handicabScores[index], index);
+                                          checkWinner(
+                                              buttonCounts[index],
+                                              handicabScores[index],
+                                              index,
+                                              isHandicap);
                                         });
                                       } else {
                                         setState(() {
@@ -1195,8 +1328,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(5.0),
-                                    ),
+                                        // borderRadius: BorderRadius.circular(5.0),
+                                        ),
                                     backgroundColor: () {
                                       if (playerCount % 2 != 0) {
                                         return Color.fromARGB(
@@ -1221,7 +1354,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   Expanded(
                                     flex: 1,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(3.0),
+                                      padding: const EdgeInsets.all(1.0),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: ElevatedButton(
@@ -1234,7 +1367,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                   checkWinner(
                                                       buttonCounts[index],
                                                       handicabScores[index],
-                                                      index);
+                                                      index,
+                                                      isHandicap);
                                                 });
                                               } else {
                                                 setState(() {
@@ -1259,9 +1393,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           ),
                                           style: ElevatedButton.styleFrom(
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5.0),
-                                              ),
+                                                  // borderRadius:
+                                                  //     BorderRadius.circular(5.0),
+                                                  ),
                                               backgroundColor:
                                                   Color.fromARGB(1, 2, 52, 161)
                                               // side: BorderSide(
@@ -1274,7 +1408,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   Expanded(
                                     flex: 1,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(3.0),
+                                      padding: const EdgeInsets.all(1.0),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: ElevatedButton(
@@ -1287,7 +1421,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                   checkWinner(
                                                       buttonCounts[index],
                                                       handicabScores[index],
-                                                      index);
+                                                      index,
+                                                      isHandicap);
                                                 });
                                               } else {
                                                 setState(() {
@@ -1312,9 +1447,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           ),
                                           style: ElevatedButton.styleFrom(
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(5.0),
-                                            ),
+                                                // borderRadius:
+                                                //     BorderRadius.circular(5.0),
+                                                ),
                                             backgroundColor:
                                                 Color.fromARGB(1, 2, 52, 161),
                                             // side: BorderSide(
@@ -1327,7 +1462,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   Expanded(
                                     flex: 1,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(3.0),
+                                      padding: const EdgeInsets.all(1.0),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: ElevatedButton(
@@ -1340,7 +1475,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                   checkWinner(
                                                       buttonCounts[index],
                                                       handicabScores[index],
-                                                      index);
+                                                      index,
+                                                      isHandicap);
                                                 });
                                               } else {
                                                 setState(() {
@@ -1366,9 +1502,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           ),
                                           style: ElevatedButton.styleFrom(
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5.0),
-                                              ),
+                                                  // borderRadius:
+                                                  //     BorderRadius.circular(5.0),
+                                                  ),
                                               backgroundColor:
                                                   Color.fromARGB(1, 2, 52, 161)
                                               // side: BorderSide(
@@ -1393,7 +1529,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                   checkWinner(
                                                       buttonCounts[index],
                                                       handicabScores[index],
-                                                      index);
+                                                      index,
+                                                      isHandicap);
                                                 });
                                               } else {
                                                 setState(() {
@@ -1419,11 +1556,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           ),
                                           style: ElevatedButton.styleFrom(
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(5.0),
-                                            ),
-                                            backgroundColor: Color.fromARGB(
-                                                240, 245, 132, 12),
+                                                // borderRadius:
+                                                //     BorderRadius.circular(5.0),
+                                                ),
+                                            backgroundColor: Colors.red,
                                             // side: BorderSide(
                                             // width: 1.0, color: Colors.blue)
                                           ),
@@ -1447,7 +1583,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Widget _buildPlayerSection(
-      int index, int playerCount, List<int> handicabScores) {
+      int index, int playerCount, List<int> handicabScores, bool isHandicap) {
     List<Color> colors = [
       Color.fromARGB(255, 255, 255, 255),
       Color.fromARGB(255, 255, 217, 0)
@@ -1459,21 +1595,49 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       // Color.fromARGB(255, 233, 216, 166),
     ];
 
-    void checkWinner(int buttonCount, int handicap, int index) {
+    Future<void> checkWinner(
+        int buttonCount, int handicap, int index, bool isHandicap) async {
+      int streamId0 = await pool.play(soundId[0]);
+      if (!isHandicap) return;
+      if (handicap - buttonCount == 5) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[5]);
+      } else if (handicap - buttonCount == 4) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[4]);
+      } else if (handicap - buttonCount == 3) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[3]);
+      } else if (handicap - buttonCount == 2) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[2]);
+      } else if (handicap - buttonCount == 1) {
+        // 팝업 표시
+        int streamId = await pool.play(soundId[1]);
+      }
       if (buttonCount >= handicap) {
         // 팝업 표시
+        int streamId = await pool.play(soundId[6]);
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Congratulations!'),
-              content: Text('Player ${index + 1} Win!'),
+              content: Padding(
+                padding: const EdgeInsets.all(30.0),
+                child: Text('PLAYER ${index + 1} Win !!!',
+                    style: TextStyle(fontSize: 100)),
+              ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('OK'),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'CLOSE',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -1512,37 +1676,55 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
           ),
           child: Column(
             children: [
-              Expanded(
-                flex: 1,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        color: Color.fromRGBO(37, 37, 38, 0.973),
-                        child: Center(
-                          child: Text(
-                            'PLAYER ${index + 1}',
-                            style: TextStyle(fontSize: playerFontSize),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
+              isHandicap
+                  ? Expanded(
                       flex: 1,
-                      child: Container(
-                        color: Color.fromRGBO(22, 5, 213, 0.973),
-                        child: Center(
-                          child: Text(
-                            '${handicabScores[index]}',
-                            style: TextStyle(fontSize: playerFontSize),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 4,
+                            child: Container(
+                              color: Color.fromRGBO(37, 37, 38, 0.973),
+                              child: Center(
+                                child: Text(
+                                  'PLAYER ${index + 1}',
+                                  style: TextStyle(fontSize: playerFontSize),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: Container(
+                              color: Color.fromRGBO(22, 5, 213, 0.973),
+                              child: Center(
+                                child: Text(
+                                  '${handicabScores[index]}',
+                                  style: TextStyle(fontSize: playerFontSize),
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    )
+                  : Expanded(
+                      flex: 1,
+                      child: Row(children: [
+                        Expanded(
+                          flex: 4,
+                          child: Container(
+                            color: Color.fromRGBO(37, 37, 38, 0.973),
+                            child: Center(
+                              child: Text(
+                                'PLAYER ${index + 1}',
+                                style: TextStyle(fontSize: playerFontSize),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ]),
                     ),
-                  ],
-                ),
-              ),
               Expanded(
                 flex: 10,
                 child: Column(
@@ -1559,8 +1741,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   if (isPressed[index]) {
                                     setState(() {
                                       incrementButtonCountBy(index, 1);
-                                      checkWinner(buttonCounts[index],
-                                          handicabScores[index], index);
+                                      checkWinner(
+                                          buttonCounts[index],
+                                          handicabScores[index],
+                                          index,
+                                          isHandicap);
                                     });
                                   } else {
                                     setState(() {
@@ -1584,8 +1769,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                               ),
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                ),
+                                    // borderRadius: BorderRadius.circular(5.0),
+                                    ),
                                 backgroundColor: () {
                                   if (playerCount % 2 != 0) {
                                     return Color.fromARGB(255, 255, 228, 168);
@@ -1625,7 +1810,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                     checkWinner(
                                                         buttonCounts[index],
                                                         handicabScores[index],
-                                                        index);
+                                                        index,
+                                                        isHandicap);
                                                   });
                                                 } else {
                                                   setState(() {
@@ -1679,7 +1865,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                     checkWinner(
                                                         buttonCounts[index],
                                                         handicabScores[index],
-                                                        index);
+                                                        index,
+                                                        isHandicap);
                                                   });
                                                 } else {
                                                   setState(() {
@@ -1738,7 +1925,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                     checkWinner(
                                                         buttonCounts[index],
                                                         handicabScores[index],
-                                                        index);
+                                                        index,
+                                                        isHandicap);
                                                   });
                                                 } else {
                                                   setState(() {
@@ -1792,7 +1980,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                     checkWinner(
                                                         buttonCounts[index],
                                                         handicabScores[index],
-                                                        index);
+                                                        index,
+                                                        isHandicap);
                                                   });
                                                 } else {
                                                   setState(() {
@@ -1821,8 +2010,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
-                                              backgroundColor: Color.fromARGB(
-                                                  240, 245, 132, 12),
+                                              backgroundColor: Colors.red,
                                               // side: BorderSide(
                                               // width: 1.0, color: Colors.blue)
                                             ),

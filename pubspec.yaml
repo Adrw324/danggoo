@@ -39,15 +39,15 @@ dependencies:
   provider: ^6.1.2
   flutter_ffmpeg: ^0.4.2
   path_provider: ^2.1.1
-  presentation_displays: ^1.0.0
   shared_preferences: ^2.2.2
   pinch_zoom: ^2.0.0
   widget_zoom: ^0.0.4
-  chewie: ^1.7.5
-  video_player: ^2.8.3
   media_kit: ^1.1.10                             # Primary package.
   media_kit_video: ^1.2.4                        # For video rendering.
-  media_kit_libs_video: ^1.0.4       
+  media_kit_libs_video: ^1.0.4    
+  audioplayers: ^6.0.0   
+  soundpool: ^2.4.1
+  web_socket_channel: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +75,16 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/1p.mp3
+    - assets/2p.mp3
+    - assets/3p.mp3  
+    - assets/4p.mp3
+    - assets/5p.mp3
+    - assets/woodclick.wav
+    - assets/winner.mp3
+    - assets/back1.jpg
+    - assets/back2.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

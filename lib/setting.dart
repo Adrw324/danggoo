@@ -37,7 +37,7 @@ class SettingScreen extends StatelessWidget {
                               .map<DropdownMenuItem<int>>((int value) {
                             return DropdownMenuItem<int>(
                               value: value,
-                              child: Text('Tablet $value'),
+                              child: Text('$value'),
                             );
                           }).toList(),
                         ),

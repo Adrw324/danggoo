@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'services/web_socket_service.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
-import 'package:media_kit/media_kit.dart'; // Provides [Player], [Media], [Playlist] etc.
-import 'package:media_kit_video/media_kit_video.dart';
+import 'match.dart'; // 추가된 MatchScreen import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
   await initApp();
   runApp(
     ChangeNotifierProvider(
@@ -35,16 +34,18 @@ class _TabletAppState extends State<TabletApp> {
         '/quickStart': (context) => QuickStartScreen(
               playerCount: 2,
               handicabScores: [0, 0],
+              isHandicap: false,
             ),
-        '/setting': (context) => SettingScreen()
+        '/setting': (context) => SettingScreen(),
+        '/match': (context) => MatchScreen(), // 추가된 MatchScreen 경로
       },
     );
   }
 }
 
 Future<void> initApp() async {
-  final gameData = GameData(); // GameData 인스턴스 생성
-  await gameData.loadGameData(); // 데이터 로드
+  final gameData = GameData();
+  await gameData.loadGameData();
 }
 
 class TabletHomePage extends StatefulWidget {
@@ -54,17 +55,39 @@ class TabletHomePage extends StatefulWidget {
 
 class _TabletHomePageState extends State<TabletHomePage> {
   List<int> handicabScores = [];
+  late WebSocketService _webSocketService;
+  String _status = "Waiting...";
+  int tableID = GameData().tabletNumber;
 
   @override
   void initState() {
     super.initState();
-    // 앱이 시작될 때 데이터를 로드
+    int tableId = Provider.of<GameData>(context, listen: false).tabletNumber;
+    print("Initializing WebSocketService with tableId: $tableId");
+    _webSocketService = WebSocketService(tableId, '192.168.50.217:5157');
+    _webSocketService.statusStream.listen((status) {
+      print("Received status update: $status");
+      setState(() {
+        _status = status;
+      });
+    });
+    _webSocketService.connect();
     Provider.of<GameData>(context, listen: false).loadGameData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _retryConnection() {
+    _webSocketService.connect();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 1, 1, 1),
       appBar: AppBar(
         title: RichText(
           text: TextSpan(
@@ -125,35 +148,98 @@ class _TabletHomePageState extends State<TabletHomePage> {
                 Navigator.pushNamed(context, '/setting');
               },
             ),
-          ],
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            InkWell(
+            ListTile(
+              title: Text('New Match'), // 추가된 New Match 리스트 항목
               onTap: () {
-                _showPlayerCountDialog(context);
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/match'); // MatchScreen으로 이동
               },
-              child: Container(
-                width: 200,
-                height: 200,
-                child: Center(
-                  child: Text(
-                    'Quick Start',
-                    style: TextStyle(fontSize: 24, color: Colors.white),
-                  ),
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
             ),
           ],
         ),
+      ),
+      body: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/back1.jpg'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          _showPlayerCountDialog(context);
+                        },
+                        child: Container(
+                          width: 135,
+                          height: 135,
+                          child: Center(
+                            child: Text(
+                              'QUICK' + '\n' + 'START',
+                              style:
+                                  TextStyle(fontSize: 32, color: Colors.white),
+                            ),
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/match');
+                        },
+                        child: Container(
+                          width: 135,
+                          height: 135,
+                          child: Center(
+                            child: Text(
+                              'NEW' + '\n' + 'MATCH',
+                              style:
+                                  TextStyle(fontSize: 32, color: Colors.white),
+                            ),
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Status: $_status',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _retryConnection,
+                    child: Text('재연결'),
+                    style: ElevatedButton.styleFrom(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -163,16 +249,33 @@ class _TabletHomePageState extends State<TabletHomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select Player Count'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          backgroundColor: Colors.transparent,
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(5, (index) {
               final playerCount = index + 2;
-              return ListTile(
-                title: Text('$playerCount Players'),
+              return InkWell(
                 onTap: () {
                   Navigator.of(context).pop(playerCount);
                 },
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Container(
+                    width: 190,
+                    height: 190,
+                    child: Center(
+                      child: Text(
+                        '$playerCount Players',
+                        style: TextStyle(fontSize: 35, color: Colors.white),
+                      ),
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                      color: Color.fromRGBO(46, 44, 53, 1),
+                    ),
+                  ),
+                ),
               );
             }),
           ),
@@ -181,22 +284,27 @@ class _TabletHomePageState extends State<TabletHomePage> {
     );
 
     if (count != null) {
-      // Initialize scores for each player to 1
       handicabScores = List.filled(count, 10);
-      // Show dialog to set handi-tab scores for each player
       _showHandicabDialog(context, count);
     }
   }
 
   Future<void> _showHandicabDialog(
       BuildContext context, int playerCount) async {
+    List<int> handicabScores = List.filled(playerCount, 10);
+
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            List<TextEditingController> controllers = List.generate(
+              playerCount,
+              (index) => TextEditingController(text: ''),
+            );
+
             return AlertDialog(
-              title: Text('Set Handicabs'),
+              title: Text('HANDICAP'),
               content: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.5,
                 child: SingleChildScrollView(
@@ -204,77 +312,29 @@ class _TabletHomePageState extends State<TabletHomePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: List.generate(playerCount, (index) {
                       return ListTile(
-                        title: Text('Player ${index + 1}'),
+                        title: Text('PLAYER ${index + 1}'),
                         contentPadding: EdgeInsets.all(0),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: ElevatedButton(
-                                  child: Text(
-                                    '- 1',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                    ),
+                              child: SizedBox(
+                                width: 100,
+                                child: TextField(
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  textAlignVertical: TextAlignVertical.center,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.all(10.0),
                                   ),
-                                  onPressed: () {
-                                    if (handicabScores[index] > 1) {
-                                      setState(() {
-                                        handicabScores[index]--;
-                                      });
-                                    }
+                                  onChanged: (value) {
+                                    handicabScores[index] =
+                                        int.tryParse(value) ?? 0;
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Colors.red, // 버튼의 배경색을 빨간색으로 설정
-                                  )),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: ElevatedButton(
-                                  child: Text(
-                                    '+ 1',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      handicabScores[index] += 1;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Colors.blue, // 버튼의 배경색을 빨간색으로 설정
-                                  )),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: ElevatedButton(
-                                  child: Text(
-                                    '+ 5',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      handicabScores[index] += 5;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Colors.blue, // 버튼의 배경색을 빨간색으로 설정
-                                  )),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(20.0, 0, 8.0, 0),
-                              child: Text('${handicabScores[index]}',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                  )),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -284,26 +344,50 @@ class _TabletHomePageState extends State<TabletHomePage> {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                  },
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QuickStartScreen(
-                          playerCount: playerCount,
-                          handicabScores: handicabScores,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Text('Save'),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuickStartScreen(
+                              playerCount: playerCount,
+                              handicabScores: handicabScores,
+                              isHandicap: false,
+                            ),
+                          ),
+                        );
+                      },
+                      child:
+                          Text('SKIP', style: TextStyle(color: Colors.orange)),
+                    ),
+                    Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuickStartScreen(
+                              playerCount: playerCount,
+                              handicabScores: handicabScores,
+                              isHandicap: true,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text('SAVE', style: TextStyle(color: Colors.blue)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child:
+                          Text('CANCEL', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
                 ),
               ],
             );
