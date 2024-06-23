@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
+import 'package:flutter/foundation.dart';
 
 class MatchScreen extends StatefulWidget {
   @override
@@ -119,10 +120,49 @@ class _MatchScreenState extends State<MatchScreen> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: Center(
-                      child: Text(
-                        'Inning Table',
-                        style: TextStyle(fontSize: playtimeFontSize),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          DataTable(
+                            columns: [
+                              DataColumn(
+                                  label: Text('Player 1',
+                                      style: TextStyle(
+                                          fontSize: playtimeFontSize / 3))),
+                              DataColumn(
+                                  label: Text('Inning',
+                                      style: TextStyle(
+                                          fontSize: playtimeFontSize / 3))),
+                              DataColumn(
+                                  label: Text('Player 2',
+                                      style: TextStyle(
+                                          fontSize: playtimeFontSize / 3))),
+                            ],
+                            rows: matchData.inningHistory
+                                .map(
+                                  (inning) => DataRow(
+                                    cells: [
+                                      DataCell(Text(
+                                        inning['player1'].toString(),
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3),
+                                      )),
+                                      DataCell(Text(
+                                        inning['inning'].toString(),
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3),
+                                      )),
+                                      DataCell(Text(
+                                        inning['player2'].toString(),
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3),
+                                      )),
+                                    ],
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -586,7 +626,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(),
-                    backgroundColor: Colors.yellow,
+                    backgroundColor: index == 0 ? Colors.white : Colors.yellow,
                   ),
                 ),
               ),
@@ -600,21 +640,25 @@ class _MatchScreenState extends State<MatchScreen> {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Average',
-                            style: TextStyle(
-                                fontSize: scoreFontSize / 3,
-                                color: Colors.white)),
-                        Text('Handicap',
-                            style: TextStyle(
-                                fontSize: scoreFontSize / 3,
-                                color: Colors.white)),
+                        Text(
+                          'Average',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 3, color: Colors.white),
+                        ),
+                        Text(
+                          'Handicap',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 3, color: Colors.white),
+                        ),
                       ],
                     ),
-                    if (matchData.currentPlayer != 0) // 현재 플레이어가 아니면 +1 버튼 표시
-                      ElevatedButton(
+                    Visibility(
+                      visible: matchData.currentPlayer != 0,
+                      child: ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            matchData.incrementScore(1); // Player 2의 점수 증가
+                            matchData
+                                .incrementScore(index); // 현재 플레이어가 아닌 경우만 증가
                           });
                         },
                         child: Text(
@@ -626,17 +670,16 @@ class _MatchScreenState extends State<MatchScreen> {
                           shape: RoundedRectangleBorder(),
                           backgroundColor: Colors.yellow,
                         ),
-                      )
-                    else
-                      Container(
-                        width: scoreFontSize * 1.2,
-                      ), // 공간 차지용 빈 컨테이너
+                      ),
+                    )
                   ] else ...[
-                    if (matchData.currentPlayer != 1) // 현재 플레이어가 아니면 +1 버튼 표시
-                      ElevatedButton(
+                    Visibility(
+                      visible: matchData.currentPlayer != 1,
+                      child: ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            matchData.incrementScore(0); // Player 1의 점수 증가
+                            matchData
+                                .incrementScore(index); // 현재 플레이어가 아닌 경우만 증가
                           });
                         },
                         child: Text(
@@ -648,22 +691,21 @@ class _MatchScreenState extends State<MatchScreen> {
                           shape: RoundedRectangleBorder(),
                           backgroundColor: Colors.white,
                         ),
-                      )
-                    else
-                      Container(
-                        width: scoreFontSize * 1.2,
-                      ), // 공간 차지용 빈 컨테이너
+                      ),
+                    ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Average',
-                            style: TextStyle(
-                                fontSize: scoreFontSize / 3,
-                                color: Colors.white)),
-                        Text('Handicap',
-                            style: TextStyle(
-                                fontSize: scoreFontSize / 3,
-                                color: Colors.white)),
+                        Text(
+                          'Average',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 3, color: Colors.white),
+                        ),
+                        Text(
+                          'Handicap',
+                          style: TextStyle(
+                              fontSize: scoreFontSize / 3, color: Colors.white),
+                        ),
                       ],
                     ),
                   ],
@@ -694,83 +736,168 @@ class DiagonalClipper extends CustomClipper<Path> {
   }
 }
 
-class MatchData with ChangeNotifier {
-  List<int> _scores = [0, 0];
-  List<Map<String, dynamic>> _inningHistory = []; // 이닝 기록
-  int _currentPlayer = 0; // 0: Player 1, 1: Player 2
-  bool _isTurnFinished = false; // 현재 턴 종료 여부
-  List<Map<String, dynamic>> _undoStack = []; // 언두 스택
-  int _inning = 1; // 현재 이닝
+class GameState {
+  final List<int> scores;
+  final int currentPlayer;
+  final int inning;
+  final bool isTurnFinished;
+  final List<Map<String, dynamic>> inningHistory;
 
-  List<int> get scores => _scores;
-  int get currentPlayer => _currentPlayer;
-  int get inning => _inning;
-  bool get isTurnFinished => _isTurnFinished; // 현재 턴 종료 여부 가져오기
+  GameState({
+    required this.scores,
+    required this.currentPlayer,
+    required this.inning,
+    required this.isTurnFinished,
+    required this.inningHistory,
+  });
+
+  GameState copyWith({
+    List<int>? scores,
+    int? currentPlayer,
+    int? inning,
+    bool? isTurnFinished,
+    List<Map<String, dynamic>>? inningHistory,
+  }) {
+    return GameState(
+      scores: scores ?? List.from(this.scores),
+      currentPlayer: currentPlayer ?? this.currentPlayer,
+      inning: inning ?? this.inning,
+      isTurnFinished: isTurnFinished ?? this.isTurnFinished,
+      inningHistory: inningHistory ?? List.from(this.inningHistory),
+    );
+  }
+}
+
+class GameAction {
+  final String type;
+  final Map<String, dynamic> data;
+  final GameState previousState;
+
+  GameAction(this.type, this.data, this.previousState);
+}
+
+class MatchData with ChangeNotifier {
+  GameState _currentState;
+  List<GameAction> _undoStack = [];
+
+  MatchData()
+      : _currentState = GameState(
+          scores: [0, 0],
+          currentPlayer: 0,
+          inning: 1,
+          isTurnFinished: false,
+          inningHistory: [],
+        );
+
+  // Getters
+  List<int> get scores => _currentState.scores;
+  int get currentPlayer => _currentState.currentPlayer;
+  int get inning => _currentState.inning;
+  bool get isTurnFinished => _currentState.isTurnFinished;
+  List<Map<String, dynamic>> get inningHistory => _currentState.inningHistory;
 
   void incrementScore(int playerIndex) {
-    if (!_isTurnFinished) {
-      _scores[playerIndex]++;
-      _undoStack.add({'playerIndex': playerIndex, 'score': 1});
-      notifyListeners();
-    }
+    final previousState = _currentState;
+    final newScores = List<int>.from(_currentState.scores);
+    // 상대방의 점수를 올립니다.
+    int opponentIndex = 1 - playerIndex;
+    newScores[opponentIndex]++;
+
+    _currentState = _currentState.copyWith(scores: newScores);
+    _undoStack.add(GameAction(
+        'incrementScore', {'playerIndex': opponentIndex}, previousState));
+    notifyListeners();
   }
 
   void finishTurn() {
-    if (!_isTurnFinished) {
-      _isTurnFinished = true;
-      _undoStack.add({'action': 1}); // 턴 종료 액션 추가
+    if (!_currentState.isTurnFinished) {
+      final previousState = _currentState;
+      final scoreThisTurn = _calculateScoreThisTurn();
+      final newInningHistory =
+          List<Map<String, dynamic>>.from(_currentState.inningHistory);
+      newInningHistory.add({
+        'player1': _currentState.currentPlayer == 0 ? scoreThisTurn : '-',
+        'inning': _currentState.inning,
+        'player2': _currentState.currentPlayer == 1 ? scoreThisTurn : '-',
+      });
+
+      _currentState = _currentState.copyWith(
+        isTurnFinished: true,
+        inningHistory: newInningHistory,
+      );
+      _undoStack.add(GameAction(
+          'finishTurn', {'scoreThisTurn': scoreThisTurn}, previousState));
       notifyListeners();
     }
   }
 
   void endTurn() {
-    if (_isTurnFinished) {
-      _currentPlayer = _currentPlayer == 0 ? 1 : 0;
-      if (_currentPlayer == 0) {
-        _inning++;
-        _inningHistory.add({'inning': _inning, 'scores': List.from(_scores)});
-        _undoStack.add({'action': 'endInning'});
-      }
-      _isTurnFinished = false;
+    if (_currentState.isTurnFinished) {
+      final previousState = _currentState;
+      final newCurrentPlayer = _currentState.currentPlayer == 0 ? 1 : 0;
+      final newInning = newCurrentPlayer == 0
+          ? _currentState.inning + 1
+          : _currentState.inning;
+
+      _currentState = _currentState.copyWith(
+        currentPlayer: newCurrentPlayer,
+        inning: newInning,
+        isTurnFinished: false,
+      );
+      _undoStack.add(GameAction('endTurn', {}, previousState));
       notifyListeners();
     }
   }
 
   void undo() {
     if (_undoStack.isNotEmpty) {
-      Map<String, dynamic> lastAction = _undoStack.removeLast();
-      if (lastAction.containsKey('score')) {
-        int playerIndex = lastAction['playerIndex']!;
-        int score = lastAction['score']!;
-        _scores[playerIndex] -= score;
-      } else if (lastAction['action'] == 1) {
-        _isTurnFinished = false;
-        _currentPlayer = _currentPlayer == 0 ? 1 : 0; // 턴 변경
-      } else if (lastAction['action'] == 'endInning') {
-        _inning--;
-        if (_inningHistory.isNotEmpty) {
-          _inningHistory.removeLast();
-        }
-      }
+      final lastAction = _undoStack.removeLast();
+      _currentState = lastAction.previousState;
       notifyListeners();
     }
   }
 
   void resetMatchData() {
-    _scores = [0, 0];
-    _inningHistory.clear();
-    _currentPlayer = 0;
-    _isTurnFinished = false;
+    _currentState = GameState(
+      scores: [0, 0],
+      currentPlayer: 0,
+      inning: 1,
+      isTurnFinished: false,
+      inningHistory: [],
+    );
     _undoStack.clear();
-    _inning = 1;
     notifyListeners();
   }
 
+  int _calculateScoreThisTurn() {
+    int scoreThisTurn = 0;
+    int currentTurnStartIndex = _undoStack.length - 1;
+
+    // 현재 턴의 시작 지점을 찾습니다.
+    while (currentTurnStartIndex >= 0 &&
+        _undoStack[currentTurnStartIndex].type != 'endTurn') {
+      currentTurnStartIndex--;
+    }
+
+    // 현재 턴의 시작부터 끝까지 점수 증가 액션을 찾아 합산합니다.
+    for (int i = currentTurnStartIndex + 1; i < _undoStack.length; i++) {
+      GameAction action = _undoStack[i];
+      if (action.type == 'incrementScore' &&
+          action.data['playerIndex'] == _currentState.currentPlayer) {
+        scoreThisTurn++;
+      }
+    }
+
+    return scoreThisTurn;
+  }
+
   void startGame(DateTime today, DateTime gameStartTime) {
-    // Game starting logic here
+    // 게임 시작 로직
+    // 필요한 경우 여기에 구현
   }
 
   void finishGame(DateTime today, DateTime gameStartTime, DateTime end) {
-    // Game finishing logic here
+    // 게임 종료 로직
+    // 필요한 경우 여기에 구현
   }
 }
