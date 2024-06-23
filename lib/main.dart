@@ -5,9 +5,11 @@ import 'quick.dart';
 import 'setting.dart';
 import 'match.dart'; // MatchScreen import 추가
 import 'services/web_socket_service.dart';
+import 'package:media_kit/media_kit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await initApp();
   runApp(
     MultiProvider(

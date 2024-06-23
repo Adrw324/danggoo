@@ -7,7 +7,6 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
@@ -450,10 +449,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     if (await file.exists()) {
       print('파일이 존재합니다.');
       // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
-      player.open(Media('file://' + outputPath + "/output.m3u8"));
-      setState(() {
-        _isLoading = false;
-      });
+      try {
+        await player.open(Media('file://' + outputPath + "/output.m3u8"));
+        print('플레이어 초기화 성공');
+        setState(() {
+          _isLoading = false;
+        });
+      } catch (e) {
+        print('플레이어 초기화 실패: $e');
+        // 에러 처리 로직 추가
+      }
     } else {
       print('파일이 존재하지 않습니다.');
     }

@@ -178,7 +178,10 @@ class _MatchScreenState extends State<MatchScreen> {
                                 ? Center(child: CircularProgressIndicator())
                                 : AspectRatio(
                                     aspectRatio: 16 / 9,
-                                    child: Video(controller: controller),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Video(controller: controller),
+                                    ),
                                   ),
                           ),
                         ),
@@ -392,23 +395,49 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<void> _initialize() async {
     await _getDirectory();
     await _deleteFilesInDirectory(outputPath);
+    _startConversion();
+    await _waitForSegment();
     await _initializeController();
   }
 
+  Future<void> _waitForSegment() async {
+    // 일정 간격으로 isSegmentGenerated를 체크하다가 생성되면 반환
+    while (!(await isSegmentGenerated())) {
+      await Future.delayed(Duration(seconds: 1)); // 적절한 간격으로 조절
+    }
+  }
+
   Future<void> _initializeController() async {
+    print('Initializing Controller!!!');
+
     File file = File(outputPath + "/output.m3u8");
 
     if (await file.exists()) {
+      print('파일이 존재합니다.');
+      // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
       player.open(Media('file://' + outputPath + "/output.m3u8"));
       setState(() {
         _isLoading = false;
       });
+    } else {
+      print('파일이 존재하지 않습니다.');
     }
   }
 
   Future<void> _getDirectory() async {
     documentDirectory = await _getDocumentDirectory();
+
+    // Create a subdirectory in the document directory to save the files
     outputPath = '$documentDirectory/ffmpeg_output';
+  }
+
+  Future<void> _startConversion() async {
+    print('AAA');
+
+    await Directory(outputPath).create(recursive: true);
+    _ffmpeg = FlutterFFmpeg();
+    // Execute the FFmpeg command
+    _runFFmpeg(inputPath, outputPath);
   }
 
   Future<bool> isSegmentGenerated() async {
@@ -421,6 +450,7 @@ class _MatchScreenState extends State<MatchScreen> {
         }
       }
     }
+
     return false;
   }
 
@@ -429,11 +459,47 @@ class _MatchScreenState extends State<MatchScreen> {
     return directory.path;
   }
 
+  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
+    List<String> arguments = [
+      '-i',
+      inputPath,
+      '-c:v',
+      'libx264',
+      '-an',
+      '-threads',
+      '2',
+      '-preset',
+      'ultrafast',
+      '-f',
+      'hls',
+      '-s',
+      '960x540',
+      '-hls_time',
+      '4',
+      '-crf',
+      '28',
+      '-hls_playlist_type',
+      'event',
+      '-hls_list_size',
+      '0',
+      '-hls_segment_filename',
+      // '-loglevel',
+      // 'quiet',
+      '$outputPath/output_%03d.ts',
+      '$outputPath/output.m3u8',
+    ];
+
+    return await _ffmpeg.executeWithArguments(arguments);
+  }
+
   Future<void> _deleteFilesInDirectory(String directoryPath) async {
     try {
       final directory = Directory(directoryPath);
       if (await directory.exists()) {
         await directory.delete(recursive: true);
+        print('Files in $directoryPath deleted successfully.');
+      } else {
+        print('Directory $directoryPath does not exist.');
       }
     } catch (e) {
       print('Error deleting files: $e');
