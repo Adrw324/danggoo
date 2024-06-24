@@ -7,6 +7,7 @@ import 'global.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:media_kit/media_kit.dart';
+import 'services/web_socket_service.dart';
 
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
@@ -29,11 +30,14 @@ class QuickStartScreen extends StatefulWidget {
   final int playerCount;
   final List<int> handicabScores;
   final bool isHandicap;
+  final WebSocketService webSocketService;
 
-  QuickStartScreen(
-      {required this.playerCount,
-      required this.handicabScores,
-      required this.isHandicap});
+  QuickStartScreen({
+    required this.playerCount,
+    required this.handicabScores,
+    required this.isHandicap,
+    required this.webSocketService,
+  });
 
   @override
   _QuickStartScreenState createState() => _QuickStartScreenState();
@@ -584,6 +588,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 Navigator.of(context).pop(); // Close the dialog
                 _startGameConfirmed(gameData);
                 isGameStarted = true;
+                widget.webSocketService.sendMessage(
+                    {'type': 'GameStarted', 'tableId': gameData.tabletNumber});
               },
               child: Text('Confirm'),
             ),
@@ -613,9 +619,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       finished: false,
     );
 
-    GameDataSender gameDataSender = GameDataSender();
-    gameDataSender.sendGameData(game, gameData);
-
     startTimer();
   }
 
@@ -636,6 +639,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 Navigator.of(context).pop(); // Close the dialog
                 _finishGameConfirmed(gameData);
                 isGameStarted = false;
+                widget.webSocketService.sendMessage(
+                    {'type': 'GameEnded', 'tableId': gameData.tabletNumber});
               },
               child: Text('Confirm'),
             ),
@@ -670,9 +675,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       fee: minutesDifference * fpm,
       finished: true,
     );
-
-    GameDataSender gameDataSender = GameDataSender();
-    gameDataSender.sendGameData(game, gameData);
 
     finish();
     Navigator.pop(context);
@@ -1703,9 +1705,19 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             child: Container(
                               color: Color.fromRGBO(22, 5, 213, 0.973),
                               child: Center(
-                                child: Text(
-                                  '${handicabScores[index]}',
-                                  style: TextStyle(fontSize: playerFontSize),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Player ${index + 1}',
+                                      style:
+                                          TextStyle(fontSize: playerFontSize),
+                                    ),
+                                    Text(
+                                      '${handicabScores[index]}',
+                                      style:
+                                          TextStyle(fontSize: playerFontSize),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

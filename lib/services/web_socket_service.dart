@@ -1,28 +1,42 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import '../global.dart';
 
 class WebSocketService {
   WebSocketChannel? _channel;
   final _statusController = StreamController<String>.broadcast();
-  int _tableId;
+  final _messageController = StreamController<String>.broadcast();
   final String _serverUrl;
+  final GameData _gameData;
+  bool _isConnecting = false;
+  bool _isClosed = false;
 
-  WebSocketService(this._tableId, this._serverUrl);
+  WebSocketService(this._serverUrl, this._gameData);
 
   Stream<String> get statusStream => _statusController.stream;
+  Stream<String> get messageStream => _messageController.stream;
 
-  void connect() {
+  Future<void> connect() async {
+    if (_isConnecting || _isClosed) return;
+    _isConnecting = true;
+
     try {
-      print("Attempting to connect to: ws://$_serverUrl/ws?tableId=$_tableId");
-      _channel =
-          IOWebSocketChannel.connect('ws://$_serverUrl/ws?tableId=$_tableId');
+      await _closeChannel();
+
+      final tableId = _gameData.tabletNumber;
+      final url = 'ws://$_serverUrl/ws?tableId=$tableId';
+      print("Attempting to connect to: $url");
+
+      _channel = IOWebSocketChannel.connect(Uri.parse(url));
       _updateStatus("Connecting...");
 
       _channel!.stream.listen(
         (message) {
-          print("WebSocket connected successfully. Received message: $message");
-          _updateStatus("Connected");
+          print("Received message: $message");
+          _messageController.add(message.toString());
+          _handleMessage(message);
         },
         onError: (error) {
           print('WebSocket error: $error');
@@ -35,38 +49,87 @@ class WebSocketService {
           _reconnect();
         },
       );
+
+      await _channel!.ready;
+      _updateStatus("Connected");
+      _sendConnectedStatus(true);
     } catch (e) {
       print('Failed to connect to WebSocket: $e');
       _updateStatus('Connection Failed: $e');
       _reconnect();
+    } finally {
+      _isConnecting = false;
+    }
+  }
+
+  void _handleMessage(dynamic message) {
+    try {
+      final jsonMessage = jsonDecode(message);
+      if (jsonMessage['type'] == 'connectionStatus') {
+        bool isConnected = jsonMessage['isConnected'];
+        _updateStatus(isConnected ? 'Connected' : 'Disconnected');
+      } else {
+        print("Unhandled message type: ${jsonMessage['type']}");
+      }
+    } catch (e) {
+      print("Error parsing message: $e");
     }
   }
 
   void _reconnect() {
-    print('Attempting to reconnect in 5 seconds...');
-    Future.delayed(Duration(seconds: 5), () {
-      connect();
-    });
-  }
-
-  void sendMessage(String message) {
-    if (_channel != null) {
-      print("Sending message: $message");
-      _channel!.sink.add(message);
-    } else {
-      print("Cannot send message: channel is null");
+    if (!_isConnecting && !_isClosed) {
+      print('Attempting to reconnect in 5 seconds...');
+      Future.delayed(Duration(seconds: 5), () {
+        connect();
+      });
     }
   }
 
-  void close() {
+  Future<void> _closeChannel() async {
+    await _channel?.sink.close();
+    _channel = null;
+  }
+
+  void sendMessage(Map<String, dynamic> message) {
+    if (_channel != null && !_isClosed) {
+      final jsonMessage = jsonEncode(message);
+      print("Sending message: $jsonMessage");
+      _channel!.sink.add(jsonMessage);
+    } else {
+      print("Cannot send message: channel is null or service is closed");
+    }
+  }
+
+  void _sendConnectedStatus(bool isConnected) {
+    sendMessage({
+      'type': 'updateTableStatus',
+      'tableId': _gameData.tabletNumber,
+      'isActive': isConnected
+    });
+  }
+
+  Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
     print("Closing WebSocket connection");
-    _channel?.sink.close();
-    _updateStatus("Disconnected");
-    _statusController.close();
+    await _closeChannel();
+    await _statusController.close();
+    await _messageController.close();
   }
 
   void _updateStatus(String status) {
-    print("WebSocket status updated: $status");
-    _statusController.add(status);
+    if (!_isClosed) {
+      print("WebSocket status updated: $status");
+      _statusController.add(status);
+    }
+  }
+
+  void retryConnection() async {
+    if (_isClosed) {
+      print("Cannot retry connection: WebSocketService is closed");
+      return;
+    }
+    await _closeChannel();
+    await connect();
   }
 }

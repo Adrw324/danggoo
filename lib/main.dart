@@ -36,13 +36,8 @@ class _TabletAppState extends State<TabletApp> {
       theme: ThemeData.dark(),
       home: TabletHomePage(),
       routes: {
-        '/quickStart': (context) => QuickStartScreen(
-              playerCount: 2,
-              handicabScores: [0, 0],
-              isHandicap: false,
-            ),
         '/setting': (context) => SettingScreen(),
-        '/match': (context) => MatchScreen(), // MatchScreen 경로 추가
+        '/match': (context) => MatchScreen(),
       },
     );
   }
@@ -62,31 +57,41 @@ class _TabletHomePageState extends State<TabletHomePage> {
   List<int> handicabScores = [];
   late WebSocketService _webSocketService;
   String _status = "Waiting...";
-  int tableID = GameData().tabletNumber;
+  String _latestMessage = "";
+
+  final serverUrl = '192.168.50.217:5157'; // 설정 파일에서 읽거나 사용자 입력으로 받을 수 있음
 
   @override
   void initState() {
     super.initState();
-    // int tableId = Provider.of<GameData>(context, listen: false).tabletNumber;
-    // print("Initializing WebSocketService with tableId: $tableId");
-    // _webSocketService = WebSocketService(tableId, '192.168.50.217:5157');
-    // _webSocketService.statusStream.listen((status) {
-    //   print("Received status update: $status");
-    //   setState(() {
-    //     _status = status;
-    //   });
-    // });
-    // _webSocketService.connect();
-    Provider.of<GameData>(context, listen: false).loadGameData();
+    final gameData = Provider.of<GameData>(context, listen: false);
+    gameData.loadGameData().then((_) {
+      _webSocketService = WebSocketService(serverUrl, gameData);
+      _webSocketService.statusStream.listen((status) {
+        setState(() {
+          _status = status;
+        });
+      });
+      _webSocketService.messageStream.listen((message) {
+        setState(() {
+          _latestMessage = message;
+        });
+      });
+      _webSocketService.connect();
+    });
   }
 
   @override
   void dispose() {
+    _webSocketService.close();
     super.dispose();
   }
 
   void _retryConnection() {
-    _webSocketService.connect();
+    final gameData = Provider.of<GameData>(context, listen: false);
+    gameData.loadGameData().then((_) {
+      _webSocketService.retryConnection();
+    });
   }
 
   @override
@@ -134,30 +139,10 @@ class _TabletHomePageState extends State<TabletHomePage> {
               ),
             ),
             ListTile(
-              title: Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text('Quick Start'),
-              onTap: () {
-                Navigator.pop(context);
-                _showPlayerCountDialog(context);
-              },
-            ),
-            ListTile(
               title: Text('Setting'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/setting');
-              },
-            ),
-            ListTile(
-              title: Text('New Match'), // New Match 리스트 항목 추가
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/match'); // MatchScreen으로 이동
               },
             ),
           ],
@@ -227,6 +212,10 @@ class _TabletHomePageState extends State<TabletHomePage> {
                     style: TextStyle(fontSize: 20, color: Colors.white),
                   ),
                   SizedBox(height: 20),
+                  Text(
+                    'Latest Message: $_latestMessage',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
                   ElevatedButton(
                     onPressed: _retryConnection,
                     child: Text('재연결'),
@@ -353,6 +342,7 @@ class _TabletHomePageState extends State<TabletHomePage> {
                               playerCount: playerCount,
                               handicabScores: handicabScores,
                               isHandicap: false,
+                              webSocketService: _webSocketService,
                             ),
                           ),
                         );
@@ -371,6 +361,7 @@ class _TabletHomePageState extends State<TabletHomePage> {
                               playerCount: playerCount,
                               handicabScores: handicabScores,
                               isHandicap: true,
+                              webSocketService: _webSocketService,
                             ),
                           ),
                         );
