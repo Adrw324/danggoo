@@ -10,8 +10,18 @@ import 'package:media_kit/media_kit.dart';
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
 import 'package:flutter/foundation.dart';
+import 'services/web_socket_service.dart';
 
 class MatchScreen extends StatefulWidget {
+  final String player1Name;
+  final String player2Name;
+  final WebSocketService webSocketService;
+
+  MatchScreen({
+    required this.player1Name,
+    required this.player2Name,
+    required this.webSocketService,
+  });
   @override
   _MatchScreenState createState() => _MatchScreenState();
 }

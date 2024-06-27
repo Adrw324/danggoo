@@ -63,13 +63,46 @@ class WebSocketService {
   }
 
   void _handleMessage(dynamic message) {
+    print("Raw message received: $message");
     try {
       final jsonMessage = jsonDecode(message);
-      if (jsonMessage['type'] == 'connectionStatus') {
-        bool isConnected = jsonMessage['isConnected'];
-        _updateStatus(isConnected ? 'Connected' : 'Disconnected');
-      } else {
-        print("Unhandled message type: ${jsonMessage['type']}");
+      print("Parsed message: $jsonMessage");
+      switch (jsonMessage['type']) {
+        case 'ForceStartGame':
+          int tableId = jsonMessage['tableId'];
+          print("Received ForceStartGame for table $tableId");
+          if (tableId == _gameData.tabletNumber) {
+            _messageController.add('ForceStartGame');
+          }
+          break;
+        case 'ForceEndGame':
+          int tableId = jsonMessage['tableId'];
+          print("Received ForceEndGame for table $tableId");
+          if (tableId == _gameData.tabletNumber) {
+            _messageController.add('ForceEndGame');
+          }
+          break;
+        case 'GameStarted':
+          int tableId = jsonMessage['tableId'];
+          print("Received GameStarted for table $tableId");
+          if (tableId == _gameData.tabletNumber) {
+            _messageController.add('GameStarted');
+          }
+          break;
+        case 'GameEnded':
+          int tableId = jsonMessage['tableId'];
+          print("Received GameEnded for table $tableId");
+          if (tableId == _gameData.tabletNumber) {
+            _messageController.add('GameEnded');
+          }
+          break;
+        case 'connectionStatus':
+          bool isConnected = jsonMessage['isConnected'];
+          print("Received connectionStatus: $isConnected");
+          _updateStatus(isConnected ? 'Connected' : 'Disconnected');
+          break;
+        default:
+          print("Unhandled message type: ${jsonMessage['type']}");
       }
     } catch (e) {
       print("Error parsing message: $e");
@@ -131,5 +164,22 @@ class WebSocketService {
     }
     await _closeChannel();
     await connect();
+  }
+
+  Future<void> register(
+      String firstName, String lastName, String username) async {
+    sendMessage({
+      'type': 'register',
+      'firstName': firstName,
+      'lastName': lastName,
+      'username': username,
+    });
+  }
+
+  Future<void> searchPlayers(String query) async {
+    sendMessage({
+      'type': 'searchPlayers',
+      'query': query,
+    });
   }
 }

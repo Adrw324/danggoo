@@ -47,7 +47,7 @@ class GameData extends ChangeNotifier {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     tabletNumber = prefs.getInt('tabletNumber') ?? 1;
     feePerMinute = prefs.getDouble('feePerMinute') ?? 1;
-    manager_uri = prefs.getString('managerUri') ?? 'localhost:5157';
+    manager_uri = prefs.getString('managerUri') ?? '192.168.50.217:5157';
     camera_uri = prefs.getString('cameraUri') ?? '';
     notifyListeners();
   }

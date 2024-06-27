@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import 'global.dart';
 import 'quick.dart';
 import 'setting.dart';
-import 'match.dart'; // MatchScreen import 추가
+import 'match.dart';
 import 'services/web_socket_service.dart';
 import 'package:media_kit/media_kit.dart';
+import 'playerSelection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ class _TabletAppState extends State<TabletApp> {
       home: TabletHomePage(),
       routes: {
         '/setting': (context) => SettingScreen(),
-        '/match': (context) => MatchScreen(),
+        '/match': (context) => PlayerSelectionScreen(),
       },
     );
   }
@@ -59,14 +60,15 @@ class _TabletHomePageState extends State<TabletHomePage> {
   String _status = "Waiting...";
   String _latestMessage = "";
 
-  final serverUrl = '192.168.50.217:5157'; // 설정 파일에서 읽거나 사용자 입력으로 받을 수 있음
+  late final serverUrl; // 설정 파일에서 읽거나 사용자 입력으로 받을 수 있음
 
   @override
   void initState() {
     super.initState();
     final gameData = Provider.of<GameData>(context, listen: false);
+
     gameData.loadGameData().then((_) {
-      _webSocketService = WebSocketService(serverUrl, gameData);
+      _webSocketService = WebSocketService(gameData.manager_uri, gameData);
       _webSocketService.statusStream.listen((status) {
         setState(() {
           _status = status;
@@ -148,85 +150,146 @@ class _TabletHomePageState extends State<TabletHomePage> {
           ],
         ),
       ),
-      body: Row(
+      body: Stack(
         children: [
-          Expanded(
-              flex: 2,
-              child: Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/back1.jpg'),
-                    fit: BoxFit.cover,
+          Row(
+            children: [
+              Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/back1.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  )),
+              Expanded(
+                flex: 1,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          _showPlayerCountDialog(context);
+                        },
+                        child: Container(
+                          width: 135,
+                          height: 135,
+                          child: Center(
+                            child: Text(
+                              'QUICK' + '\n' + 'START',
+                              style:
+                                  TextStyle(fontSize: 32, color: Colors.white),
+                            ),
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => PlayerSelectionScreen()),
+                          );
+                        },
+                        child: Container(
+                          width: 135,
+                          height: 135,
+                          child: Center(
+                            child: Text(
+                              'NEW' + '\n' + 'MATCH',
+                              style:
+                                  TextStyle(fontSize: 32, color: Colors.white),
+                            ),
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Status: $_status',
+                        style: TextStyle(fontSize: 20, color: Colors.white),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _retryConnection,
+                        child: Text('Reconnect'),
+                        style: ElevatedButton.styleFrom(),
+                      ),
+                    ],
                   ),
                 ),
-              )),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      _showPlayerCountDialog(context);
-                    },
-                    child: Container(
-                      width: 135,
-                      height: 135,
-                      child: Center(
-                        child: Text(
-                          'QUICK' + '\n' + 'START',
-                          style: TextStyle(fontSize: 32, color: Colors.white),
-                        ),
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white, width: 2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  InkWell(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/match');
-                    },
-                    child: Container(
-                      width: 135,
-                      height: 135,
-                      child: Center(
-                        child: Text(
-                          'NEW' + '\n' + 'MATCH',
-                          style: TextStyle(fontSize: 32, color: Colors.white),
-                        ),
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white, width: 2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Status: $_status',
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Latest Message: $_latestMessage',
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                  ElevatedButton(
-                    onPressed: _retryConnection,
-                    child: Text('재연결'),
-                    style: ElevatedButton.styleFrom(),
-                  ),
-                ],
               ),
+            ],
+          ),
+          Positioned(
+            top: 10,
+            right: 10,
+            child: ElevatedButton(
+              onPressed: () {
+                _showJoinDialog(context);
+              },
+              child: Text('JOIN'),
+              style: ElevatedButton.styleFrom(),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showJoinDialog(BuildContext context) {
+    String firstName = '';
+    String lastName = '';
+    String username = '';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(labelText: 'First Name'),
+                onChanged: (value) => firstName = value,
+              ),
+              TextField(
+                decoration: InputDecoration(labelText: 'Last Name'),
+                onChanged: (value) => lastName = value,
+              ),
+              TextField(
+                decoration: InputDecoration(labelText: 'Username'),
+                onChanged: (value) => username = value,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('JOIN'),
+              onPressed: () async {
+                await _webSocketService.register(firstName, lastName, username);
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
     );
   }
 
