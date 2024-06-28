@@ -11,15 +11,16 @@ import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
 import 'package:flutter/foundation.dart';
 import 'services/web_socket_service.dart';
+import 'playerSelection.dart';
 
 class MatchScreen extends StatefulWidget {
-  final String player1Name;
-  final String player2Name;
+  GamePlayer player1;
+  GamePlayer player2;
   final WebSocketService webSocketService;
 
   MatchScreen({
-    required this.player1Name,
-    required this.player2Name,
+    required this.player1,
+    required this.player2,
     required this.webSocketService,
   });
   @override
@@ -49,6 +50,8 @@ class _MatchScreenState extends State<MatchScreen> {
 
   Soundpool pool = Soundpool(streamType: StreamType.notification);
   late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  late StreamSubscription _messageSubscription;
 
   @override
   Widget build(BuildContext context) {
@@ -361,13 +364,44 @@ class _MatchScreenState extends State<MatchScreen> {
   @override
   void initState() {
     super.initState();
+    _messageSubscription =
+        widget.webSocketService.messageStream.listen((message) {
+      if (message == 'ForceStartGame') {
+        if (!isTimerRunning) {
+          print("Forcing game start");
+          _startGameWithoutConfirmation(
+              Provider.of<MatchData>(context, listen: false));
+        }
+      } else if (message == 'ForceEndGame') {
+        if (isTimerRunning) {
+          print("Forcing game end");
+          _finishGameWithoutConfirmation(
+              Provider.of<MatchData>(context, listen: false));
+        }
+      }
+    });
 
-    final gameData = Provider.of<GameData>(context, listen: false);
-
-    inputPath = gameData.camera_uri;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
 
     _settingButtonSound();
     _initialize();
+  }
+
+  void _initializeData() {
+    final gameData = Provider.of<GameData>(context, listen: false);
+    final matchData = Provider.of<MatchData>(context, listen: false);
+
+    inputPath = gameData.camera_uri;
+
+    matchData.initializePlayers(
+      widget.player1,
+      widget.player2,
+      widget.webSocketService,
+    );
+
+    setState(() {});
   }
 
   Future<void> _settingButtonSound() async {
@@ -564,11 +598,29 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
+  void _startGameWithoutConfirmation(MatchData matchData) {
+    setState(() {
+      isGameStarted = true;
+    });
+    _startGameConfirmed(matchData);
+  }
+
+  void _finishGameWithoutConfirmation(MatchData matchData) {
+    setState(() {
+      isGameStarted = false;
+    });
+    _finishGameConfirmed(matchData);
+  }
+
   void _startGameConfirmed(MatchData matchData) {
     DateTime today = DateTime.now();
     gameStartTime = DateTime.now();
     matchData.startGame(today, gameStartTime);
     startTimer();
+    widget.webSocketService.sendMessage({
+      'type': 'GameStarted',
+      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    });
   }
 
   void finishGame(MatchData matchData) {
@@ -607,8 +659,12 @@ class _MatchScreenState extends State<MatchScreen> {
     DateTime today = DateTime.now();
     DateTime end = DateTime.now();
     matchData.finishGame(today, gameStartTime, end);
-    matchData.resetMatchData(); // 매치 데이터 초기화
+    matchData._resetMatchDataWithoutNotify(); // 매치 데이터 초기화
     finish();
+    widget.webSocketService.sendMessage({
+      'type': 'GameEnded',
+      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    });
     Navigator.pop(context);
   }
 
@@ -878,6 +934,10 @@ class MatchData with ChangeNotifier {
   late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0];
   bool _isColorSwapped = false;
 
+  late GamePlayer _player1;
+  late GamePlayer _player2;
+  late WebSocketService _webSocketService;
+
   List<Account> accounts = [
     Account(
         name: "Player 1",
@@ -903,6 +963,28 @@ class MatchData with ChangeNotifier {
           inningHistory: [],
         ) {
     _initializeSounds();
+  }
+
+  void initializePlayers(GamePlayer p1, GamePlayer p2, WebSocketService ws) {
+    _player1 = p1;
+    _player2 = p2;
+    _webSocketService = ws;
+    accounts = [
+      Account(
+        name: p1.username,
+        initialAverage: p1.average,
+        initialHandicap: p1.handicap,
+        initialTotalShots: p1.totalPlay,
+      ),
+      Account(
+        name: p2.username,
+        initialAverage: p2.average,
+        initialHandicap: p2.handicap,
+        initialTotalShots: p2.totalPlay,
+      ),
+    ];
+    _resetMatchDataWithoutNotify();
+    notifyListeners();
   }
 
   // Getters
@@ -1074,7 +1156,7 @@ class MatchData with ChangeNotifier {
     return scoreThisTurn;
   }
 
-  void resetMatchData() {
+  void _resetMatchDataWithoutNotify() {
     _currentState = GameState(
       playerStates: [
         PlayerState(
@@ -1092,7 +1174,6 @@ class MatchData with ChangeNotifier {
       inningHistory: [],
     );
     _undoStack.clear();
-    notifyListeners();
   }
 
   void startGame(DateTime today, DateTime gameStartTime) {
@@ -1100,13 +1181,31 @@ class MatchData with ChangeNotifier {
   }
 
   void finishGame(DateTime today, DateTime gameStartTime, DateTime end) {
-    // Game finishing logic here
-  }
+    int totalTurns1 = playerStates[0].turns;
+    int totalTurns2 = playerStates[1].turns;
+    int totalScore1 = playerStates[0].score;
+    int totalScore2 = playerStates[1].score;
 
-  Future<void> fetchAccountsFromServer() async {
-    // TODO: Implement API call to fetch account data
-    // For now, we'll just use the default values
-    notifyListeners();
+    int newTotalPlay1 = _player1.totalPlay + totalTurns1;
+    int newTotalPlay2 = _player2.totalPlay + totalTurns2;
+    int newTotalScore1 = _player1.totalScore + totalScore1;
+    int newTotalScore2 = _player2.totalScore + totalScore2;
+
+    double newAverage1 = newTotalScore1 / newTotalPlay1;
+    double newAverage2 = newTotalScore2 / newTotalPlay2;
+
+    _webSocketService.updatePlayerStats(
+        _player1.id, newAverage1, newTotalPlay1, newTotalScore1);
+    _webSocketService.updatePlayerStats(
+        _player2.id, newAverage2, newTotalPlay2, newTotalScore2);
+
+    _player1.average = newAverage1;
+    _player1.totalPlay = newTotalPlay1;
+    _player1.totalScore = newTotalScore1;
+
+    _player2.average = newAverage2;
+    _player2.totalPlay = newTotalPlay2;
+    _player2.totalScore = newTotalScore2;
   }
 
   @override

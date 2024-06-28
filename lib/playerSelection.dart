@@ -1,29 +1,41 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/web_socket_service.dart';
 import 'match.dart';
 import 'global.dart';
 
-class Player {
+class GamePlayer {
   final int id;
   final String firstName;
   final String lastName;
   final String username;
+  double average;
+  int totalPlay;
+  int totalScore;
+  int handicap;
 
-  Player(
-      {required this.id,
-      required this.firstName,
-      required this.lastName,
-      required this.username});
+  GamePlayer({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.username,
+    required this.average,
+    required this.totalPlay,
+    required this.totalScore,
+    this.handicap = 10,
+  });
 
-  factory Player.fromJson(Map<String, dynamic> json) {
-    return Player(
+  factory GamePlayer.fromJson(Map<String, dynamic> json) {
+    return GamePlayer(
       id: json['Id'] as int,
       firstName: json['FirstName'] as String,
       lastName: json['LastName'] as String,
       username: json['Username'] as String,
+      average: (json['Average'] as num).toDouble(),
+      totalPlay: json['TotalPlay'] as int,
+      totalScore: json['TotalScore'] as int,
     );
   }
 }
@@ -34,11 +46,10 @@ class PlayerSelectionScreen extends StatefulWidget {
 }
 
 class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
-  List<Player> players = [];
-  Player? player1;
-  Player? player2;
+  List<GamePlayer> players = [];
+  GamePlayer? player1;
+  GamePlayer? player2;
   late WebSocketService _webSocketService;
-  int? selectedSlot; // 1 for player1, 2 for player2
   TextEditingController _searchController = TextEditingController();
 
   @override
@@ -50,7 +61,6 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
     _webSocketService.connect().then((_) {
       _searchPlayers('');
     });
-    _webSocketService.messageStream.listen(_handleIncomingMessage);
   }
 
   void _handleIncomingMessage(String message) {
@@ -62,7 +72,7 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
         var playersData = jsonMessage['players'];
         if (playersData is List) {
           setState(() {
-            players = playersData.map((p) => Player.fromJson(p)).toList();
+            players = playersData.map((p) => GamePlayer.fromJson(p)).toList();
           });
         } else {
           print("Error: 'players' is not a List");
@@ -75,22 +85,6 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
     print("Parsed players: $players");
   }
 
-  Future<void> _fetchPlayers() async {
-    // TODO: Implement player fetching from the server
-    // For now, we'll use dummy data
-    setState(() {
-      players = List.generate(
-        10,
-        (index) => Player(
-          id: index + 1,
-          firstName: "Player ${index + 1}",
-          lastName: "Player ${index + 1}",
-          username: "player${index + 1}",
-        ),
-      );
-    });
-  }
-
   void _searchPlayers(String query) {
     _webSocketService.searchPlayers(query);
   }
@@ -98,28 +92,29 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1E2761), // Dark blue background
+      backgroundColor: Color(0xFF1E2761),
       appBar: AppBar(
         title: Text('Select Players'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Row(
+      body: Column(
         children: [
-          _buildPlayerSlot(1),
+          _buildSearchBar(),
           Expanded(
-            flex: 3,
-            child: Column(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSearchBar(),
+                Expanded(child: _buildPlayerSlot(1, player1)),
                 Expanded(
+                  flex: 2,
                   child: _buildPlayerList(),
                 ),
-                _buildActionButtons(),
+                Expanded(child: _buildPlayerSlot(2, player2)),
               ],
             ),
           ),
-          _buildPlayerSlot(2),
+          _buildActionButtons(),
         ],
       ),
     );
@@ -147,89 +142,159 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
   }
 
   Widget _buildPlayerList() {
-    return ListView.builder(
-      itemCount: players.length,
-      itemBuilder: (context, index) {
-        return Card(
-          color: Colors.grey[850],
-          child: ListTile(
-            leading: CircleAvatar(
-              child: Text(players[index].firstName[0]),
+    return Expanded(
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: AlwaysScrollableScrollPhysics(), // 여기를 변경했습니다
+        itemCount: players.length,
+        itemBuilder: (context, index) {
+          final player = players[index];
+          final isSelected = player == player1 || player == player2;
+          return Card(
+            color: isSelected ? Colors.orange : Colors.grey[850],
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Text(player.firstName[0]),
+              ),
+              title: Text(
+                '${player.firstName} ${player.lastName}',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                '${player.username} (Avg: ${player.average.toStringAsFixed(2)})',
+                style: TextStyle(color: Colors.grey),
+              ),
+              onTap: () => _selectPlayer(player),
             ),
-            title: Text(
-                '${players[index].firstName} ${players[index].lastName}',
-                style: TextStyle(color: Colors.white)),
-            subtitle: Text(players[index].username,
-                style: TextStyle(color: Colors.grey)),
-            onTap: () {
-              if (selectedSlot == 1) {
-                setState(() => player1 = players[index]);
-              } else if (selectedSlot == 2) {
-                setState(() => player2 = players[index]);
-              }
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlayerSlot(int slotNumber, GamePlayer? selectedPlayer) {
+    return Container(
+      margin: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: selectedPlayer != null ? Colors.green : Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person, size: 50, color: Colors.white),
+          SizedBox(height: 8),
+          Text(
+            selectedPlayer?.firstName ?? 'Player $slotNumber',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          if (selectedPlayer != null) ...[
+            Text(
+              selectedPlayer.username,
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            Text(
+              'Avg: ${selectedPlayer.average.toStringAsFixed(2)}',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            SizedBox(height: 8),
+            ElevatedButton(
+              child: Text('Set Handicap: ${selectedPlayer.handicap}'),
+              onPressed: () => _showHandicapDialog(selectedPlayer),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showHandicapDialog(GamePlayer player) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String handicapString = player.handicap.toString();
+        return AlertDialog(
+          content: TextField(
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(labelText: 'Handicap'),
+            controller: TextEditingController(text: handicapString),
+            onChanged: (value) {
+              handicapString = value;
             },
           ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                setState(() {
+                  player.handicap = int.tryParse(handicapString) ?? 10;
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildPlayerSlot(int slotNumber) {
-    Player? selectedPlayer = slotNumber == 1 ? player1 : player2;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => selectedSlot = slotNumber),
-        child: Container(
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color:
-                selectedSlot == slotNumber ? Colors.orange : Colors.grey[800],
-            borderRadius: BorderRadius.circular(8),
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton(
+            child: Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.person, size: 50, color: Colors.white),
-              SizedBox(height: 8),
-              Text(
-                selectedPlayer?.firstName ?? 'Player $slotNumber',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ],
+          ElevatedButton(
+            child: Text('Start Match'),
+            onPressed: player1 != null && player2 != null
+                ? () => _startMatch(context)
+                : null,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        ElevatedButton(
-          child: Text('Cancel'),
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+  void _selectPlayer(GamePlayer player) {
+    setState(() {
+      if (player == player1) {
+        player1 = null;
+      } else if (player == player2) {
+        player2 = null;
+      } else if (player1 == null) {
+        player1 = player;
+      } else if (player2 == null) {
+        player2 = player;
+      }
+    });
+  }
+
+  void _startMatch(BuildContext context) {
+    if (player1 != null && player2 != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MatchScreen(
+            player1: player1!,
+            player2: player2!,
+            webSocketService: _webSocketService,
+          ),
         ),
-        ElevatedButton(
-          child: Text('Submit'),
-          onPressed: player1 != null && player2 != null
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MatchScreen(
-                        player1Name: player1!.username,
-                        player2Name: player2!.username,
-                        webSocketService: _webSocketService,
-                      ),
-                    ),
-                  );
-                }
-              : null,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-        ),
-      ],
-    );
+      );
+    }
   }
 }

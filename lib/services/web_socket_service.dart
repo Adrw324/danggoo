@@ -182,4 +182,15 @@ class WebSocketService {
       'query': query,
     });
   }
+
+  void updatePlayerStats(
+      int playerId, double newAverage, int newTotalPlay, int newTotalScore) {
+    sendMessage({
+      'type': 'updatePlayerStats',
+      'playerId': playerId,
+      'newAverage': newAverage,
+      'newTotalPlay': newTotalPlay,
+      'newTotalScore': newTotalScore,
+    });
+  }
 }
