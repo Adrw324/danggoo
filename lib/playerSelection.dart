@@ -92,7 +92,7 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1E2761),
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: Text('Select Players'),
         backgroundColor: Colors.transparent,
@@ -125,14 +125,17 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
       padding: const EdgeInsets.all(8.0),
       child: TextField(
         controller: _searchController,
+        style: TextStyle(color: Colors.black), // 입력 텍스트 색상
         decoration: InputDecoration(
-          hintText: 'Search players...',
+          hintText: 'Search...',
+          hintStyle: TextStyle(color: Colors.grey[600]), // 힌트 텍스트 색상
           fillColor: Colors.white,
           filled: true,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
           ),
+          prefixIcon: Icon(Icons.search, color: Colors.grey[600]), // 검색 아이콘 추가
         ),
         onChanged: (value) {
           _searchPlayers(value);
@@ -173,10 +176,23 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
   }
 
   Widget _buildPlayerSlot(int slotNumber, GamePlayer? selectedPlayer) {
+    String slotText;
+    if (selectedPlayer == null) {
+      if (slotNumber == 1 && player1 == null) {
+        slotText = 'Choose Player 1';
+      } else if (slotNumber == 2 && player1 != null) {
+        slotText = 'Choose Player 2';
+      } else {
+        slotText = '';
+      }
+    } else {
+      slotText = selectedPlayer.firstName;
+    }
+
     return Container(
       margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: selectedPlayer != null ? Colors.green : Colors.grey[800],
+        color: selectedPlayer != null ? Colors.cyan : Colors.grey[800],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -185,7 +201,7 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
           Icon(Icons.person, size: 50, color: Colors.white),
           SizedBox(height: 8),
           Text(
-            selectedPlayer?.firstName ?? 'Player $slotNumber',
+            slotText,
             style: TextStyle(color: Colors.white, fontSize: 18),
           ),
           if (selectedPlayer != null) ...[
@@ -250,19 +266,45 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ElevatedButton(
-            child: Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            child: ElevatedButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
           ),
-          ElevatedButton(
-            child: Text('Start Match'),
-            onPressed: player1 != null && player2 != null
-                ? () => _startMatch(context)
-                : null,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            child: ElevatedButton(
+              child: Text(
+                'Start Match',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              onPressed: player1 != null && player2 != null
+                  ? () => _startMatch(context)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
           ),
         ],
       ),

@@ -129,230 +129,257 @@ class _MatchScreenState extends State<MatchScreen> {
             ),
             Expanded(
               flex: 1,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          DataTable(
-                            columns: [
-                              DataColumn(
-                                  label: Text('Player 1',
-                                      style: TextStyle(
-                                          fontSize: playtimeFontSize / 3))),
-                              DataColumn(
-                                  label: Text('Inning',
-                                      style: TextStyle(
-                                          fontSize: playtimeFontSize / 3))),
-                              DataColumn(
-                                  label: Text('Player 2',
-                                      style: TextStyle(
-                                          fontSize: playtimeFontSize / 3))),
-                            ],
-                            rows: matchData.inningHistory
-                                .map(
-                                  (inning) => DataRow(
-                                    cells: [
-                                      DataCell(Text(
-                                        inning['player1'].toString(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 0, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            DataTable(
+                              columns: [
+                                DataColumn(
+                                    label: Text('Player 1',
                                         style: TextStyle(
-                                            fontSize: playtimeFontSize / 3),
-                                      )),
-                                      DataCell(Text(
-                                        inning['inning'].toString(),
+                                            fontSize: playtimeFontSize / 3))),
+                                DataColumn(
+                                    label: Text('Inning',
                                         style: TextStyle(
-                                            fontSize: playtimeFontSize / 3),
-                                      )),
-                                      DataCell(Text(
-                                        inning['player2'].toString(),
+                                            fontSize: playtimeFontSize / 3))),
+                                DataColumn(
+                                    label: Text('Player 2',
                                         style: TextStyle(
-                                            fontSize: playtimeFontSize / 3),
-                                      )),
-                                    ],
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ],
+                                            fontSize: playtimeFontSize / 3))),
+                              ],
+                              rows: matchData.inningHistory
+                                  .map(
+                                    (inning) => DataRow(
+                                      cells: [
+                                        DataCell(Text(
+                                          inning['player1'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                        DataCell(Text(
+                                          inning['inning'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                        DataCell(Text(
+                                          inning['player2'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          flex: 5,
-                          child: Center(
-                            child: _isLoading
-                                ? Center(child: CircularProgressIndicator())
-                                : AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Video(controller: controller),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              TextButton(
-                                onPressed: () async {
-                                  await player.seek(player.state.position -
-                                      Duration(seconds: 5));
-                                },
-                                child: Icon(Icons.replay_5,
-                                    size: 35, color: Colors.white),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  await player.seek(player.state.position +
-                                      Duration(seconds: 5));
-                                },
-                                child: Icon(Icons.forward_5,
-                                    size: 35, color: Colors.white),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  await player.seek(player.state.duration);
-                                },
-                                child: Text(
-                                  'LIVE',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 25),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isLoading = true;
-                                  });
-                                  _initialize();
-                                },
-                                child: Text(
-                                  'Reset',
-                                  style: TextStyle(
-                                      color: Colors.teal, fontSize: 25),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!isGameStarted)
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Color.fromRGBO(37, 37, 38, 0.973),
-                            ),
-                            onPressed: () => startGame(matchData),
-                            child: Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: Container(
-                                child: Center(
-                                  child: Text('START',
-                                      style: TextStyle(
-                                          fontSize: 50, color: Colors.white)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (isGameStarted)
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                            ),
-                            onPressed: () => finishGame(matchData),
-                            child: Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: Container(
-                                child: Center(
-                                  child: Text('FINISH',
-                                      style: TextStyle(
-                                          fontSize: 50, color: Colors.white)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    Expanded(
+                      flex: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
                           children: [
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  matchData.undo();
-                                });
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(15.0),
-                                child: Container(
-                                  child: Center(
-                                    child: Text('UNDO',
-                                        style: TextStyle(
-                                            fontSize: 30, color: Colors.white)),
-                                  ),
-                                ),
+                            Expanded(
+                              flex: 5,
+                              child: Center(
+                                child: _isLoading
+                                    ? Center(child: CircularProgressIndicator())
+                                    : AspectRatio(
+                                        aspectRatio: 16 / 9,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Video(controller: controller),
+                                        ),
+                                      ),
                               ),
                             ),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  final matchData = Provider.of<MatchData>(
-                                      context,
-                                      listen: false);
-                                  matchData.toggleColors();
-                                });
-                              },
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                child: Center(
-                                  child: ClipPath(
-                                    clipper: DiagonalClipper(),
-                                    child: Container(
-                                      height: 80,
-                                      width: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.yellow,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
+                            Expanded(
+                              flex: 1,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      await player.seek(player.state.position -
+                                          Duration(seconds: 5));
+                                    },
+                                    child: Icon(Icons.replay_5,
+                                        size: 35, color: Colors.white),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      await player.seek(player.state.position +
+                                          Duration(seconds: 5));
+                                    },
+                                    child: Icon(Icons.forward_5,
+                                        size: 35, color: Colors.white),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      await player.seek(player.state.duration);
+                                    },
+                                    child: Text(
+                                      'LIVE',
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 25),
                                     ),
                                   ),
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 2,
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _isLoading = true;
+                                      });
+                                      _initialize();
+                                    },
+                                    child: Text(
+                                      'Reset',
+                                      style: TextStyle(
+                                          color: Colors.teal, fontSize: 25),
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.white,
-                                ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: !isGameStarted
+                                            ? Color.fromRGBO(37, 37, 38, 0.973)
+                                            : Colors.redAccent,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 15),
+                                      ),
+                                      onPressed: !isGameStarted
+                                          ? () => startGame(matchData)
+                                          : () => finishGame(matchData),
+                                      child: Text(
+                                        !isGameStarted ? 'START' : 'FINISH',
+                                        style: TextStyle(
+                                            fontSize: 24, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 15),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          matchData.undo();
+                                        });
+                                      },
+                                      child: Text(
+                                        'UNDO',
+                                        style: TextStyle(
+                                            fontSize: 24, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueGrey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                      onPressed: () {
+                                        // 여기에 자리바꿈 로직 추가
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Text('CHANGE',
+                                              style: TextStyle(fontSize: 16)),
+                                          Text('SEAT',
+                                              style: TextStyle(fontSize: 16)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          final matchData =
+                                              Provider.of<MatchData>(context,
+                                                  listen: false);
+                                          matchData.toggleColors();
+                                        });
+                                      },
+                                      child: Container(
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(
+                                              color: Colors.black, width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: ClipPath(
+                                          clipper: DiagonalClipper(),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.yellow,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -799,7 +826,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          matchData.incrementScore(index);
+                          matchData.incrementScore(context, index);
                         });
                       },
                       child: Text(
@@ -1038,7 +1065,7 @@ class MatchData with ChangeNotifier {
     notifyListeners();
   }
 
-  void incrementScore(int playerIndex) {
+  void incrementScore(BuildContext context, int playerIndex) {
     final previousState = _currentState;
     final newPlayerStates =
         _currentState.playerStates.map((p) => p.copyWith()).toList();
@@ -1052,6 +1079,7 @@ class MatchData with ChangeNotifier {
 
     _updateAverageAndHandicap(opponentIndex);
     _checkScoreAndPlaySound(opponentIndex);
+    checkWinner(context, opponentIndex);
 
     notifyListeners();
   }
@@ -1206,6 +1234,38 @@ class MatchData with ChangeNotifier {
     _player2.average = newAverage2;
     _player2.totalPlay = newTotalPlay2;
     _player2.totalScore = newTotalScore2;
+  }
+
+  void checkWinner(BuildContext context, int playerIndex) {
+    int handicap = _currentState.playerStates[playerIndex].handicap;
+    int score = _currentState.playerStates[playerIndex].score;
+
+    if (score >= handicap) {
+      String winnerName = accounts[playerIndex].name;
+      showWinnerDialog(context, winnerName);
+    }
+  }
+
+  void showWinnerDialog(BuildContext context, String winnerName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text('$winnerName Win!', style: TextStyle(fontSize: 100)),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
