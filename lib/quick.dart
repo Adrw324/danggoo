@@ -539,7 +539,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       '-s',
       '960x540',
       '-hls_time',
-      '4',
+      '2',
       '-crf',
       '28',
       '-hls_playlist_type',

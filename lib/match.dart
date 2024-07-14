@@ -39,6 +39,8 @@ class _MatchScreenState extends State<MatchScreen> {
   int currentPlayer = 0;
   int inning = 0;
 
+  bool isSeatsSwapped = false;
+
   late FlutterFFmpeg _ffmpeg;
   late String inputPath =
       'rtsp://admin:a1234567@192.168.50.106:554/h264Preview_01_main';
@@ -324,7 +326,9 @@ class _MatchScreenState extends State<MatchScreen> {
                                             EdgeInsets.symmetric(vertical: 10),
                                       ),
                                       onPressed: () {
-                                        // 여기에 자리바꿈 로직 추가
+                                        setState(() {
+                                          isSeatsSwapped = !isSeatsSwapped;
+                                        });
                                       },
                                       child: Column(
                                         children: [
