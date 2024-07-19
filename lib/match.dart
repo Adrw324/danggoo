@@ -239,18 +239,24 @@ class _MatchScreenState extends State<MatchScreen> {
                                                         MaterialVideoControlsThemeData(
                                                       volumeGesture: false,
                                                       brightnessGesture: false,
+                                                      seekOnDoubleTap:
+                                                          true, // 더블 탭으로 seek 활성화
                                                       bottomButtonBar: const [
                                                         MaterialPositionIndicator(),
                                                         Spacer(),
+                                                        // MaterialFullscreenButton() 제거됨
                                                       ],
                                                     ),
                                                     fullscreen:
                                                         MaterialVideoControlsThemeData(
                                                       volumeGesture: false,
                                                       brightnessGesture: false,
+                                                      seekOnDoubleTap:
+                                                          true, // 더블 탭으로 seek 활성화
                                                       bottomButtonBar: const [
                                                         MaterialPositionIndicator(),
                                                         Spacer(),
+                                                        // MaterialFullscreenButton() 제거됨
                                                       ],
                                                     ),
                                                     child:
@@ -291,17 +297,17 @@ class _MatchScreenState extends State<MatchScreen> {
                                   TextButton(
                                     onPressed: () async {
                                       await player.seek(player.state.position -
-                                          Duration(seconds: 5));
+                                          Duration(seconds: 10));
                                     },
-                                    child: Icon(Icons.replay_5,
+                                    child: Icon(Icons.replay_10,
                                         size: 35, color: Colors.white),
                                   ),
                                   TextButton(
                                     onPressed: () async {
                                       await player.seek(player.state.position +
-                                          Duration(seconds: 5));
+                                          Duration(seconds: 10));
                                     },
-                                    child: Icon(Icons.forward_5,
+                                    child: Icon(Icons.forward_10,
                                         size: 35, color: Colors.white),
                                   ),
                                   TextButton(
