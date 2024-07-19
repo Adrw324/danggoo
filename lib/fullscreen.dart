@@ -27,7 +27,32 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
             child: Center(
               child: AspectRatio(
                 aspectRatio: 16 / 9, // 비디오의 실제 비율에 맞게 조정하세요
-                child: Video(controller: widget.controller),
+                child: Video(
+                  controller: widget.controller,
+                  controls: (state) => MaterialVideoControlsTheme(
+                    normal: MaterialVideoControlsThemeData(
+                      volumeGesture: false,
+                      brightnessGesture: false,
+                      seekOnDoubleTap: true,
+                      bottomButtonBar: const [
+                        MaterialPositionIndicator(),
+                        Spacer(),
+                        // MaterialFullscreenButton() 제거됨
+                      ],
+                    ),
+                    fullscreen: MaterialVideoControlsThemeData(
+                      volumeGesture: false,
+                      brightnessGesture: false,
+                      seekOnDoubleTap: true,
+                      bottomButtonBar: const [
+                        MaterialPositionIndicator(),
+                        Spacer(),
+                        // MaterialFullscreenButton() 제거됨
+                      ],
+                    ),
+                    child: MaterialVideoControls(state),
+                  ),
+                ),
               ),
             ),
           ),

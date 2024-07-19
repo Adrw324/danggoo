@@ -11,6 +11,7 @@ import 'services/web_socket_service.dart';
 
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
+import 'fullscreen.dart';
 
 class QuickStartWidget extends StatefulWidget {
   const QuickStartWidget({super.key});
@@ -178,11 +179,69 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       ? Center(
                                           child: CircularProgressIndicator(),
                                         )
-                                      : AspectRatio(
-                                          aspectRatio: 16 / 9,
-                                          child: Video(
-                                            controller: controller,
-                                          ),
+                                      : Stack(
+                                          children: [
+                                            AspectRatio(
+                                              aspectRatio: 16 / 9,
+                                              child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Video(
+                                                    controller: controller,
+                                                    controls: (state) =>
+                                                        MaterialVideoControlsTheme(
+                                                      normal:
+                                                          const MaterialVideoControlsThemeData(
+                                                        volumeGesture: false,
+                                                        brightnessGesture:
+                                                            false,
+                                                        seekOnDoubleTap:
+                                                            true, // 더블 탭으로 seek 활성화
+                                                        bottomButtonBar: [
+                                                          MaterialPositionIndicator(),
+                                                          Spacer(),
+                                                          // MaterialFullscreenButton() 제거됨
+                                                        ],
+                                                      ),
+                                                      fullscreen:
+                                                          const MaterialVideoControlsThemeData(
+                                                        volumeGesture: false,
+                                                        brightnessGesture:
+                                                            false,
+                                                        seekOnDoubleTap:
+                                                            true, // 더블 탭으로 seek 활성화
+                                                        bottomButtonBar: [
+                                                          MaterialPositionIndicator(),
+                                                          Spacer(),
+                                                          // MaterialFullscreenButton()
+                                                        ],
+                                                      ),
+                                                      child:
+                                                          MaterialVideoControls(
+                                                              state),
+                                                    ),
+                                                  )),
+                                            ),
+                                            Positioned(
+                                              top: 10,
+                                              right: 10,
+                                              child: IconButton(
+                                                icon: Icon(Icons.fullscreen),
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          FullscreenVideoPage(
+                                                        controller: controller,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                 ),
                               ),
@@ -197,49 +256,31 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           children: [
                             TextButton(
                               onPressed: () async {
-                                // 버튼 2가 눌렸을 때 실행되는 코드
                                 await player.seek(player.state.position -
-                                    Duration(seconds: 5));
+                                    Duration(seconds: 10));
                               },
-                              child: Icon(Icons.replay_5,
+                              child: Icon(Icons.replay_10,
                                   size: 35, color: Colors.white),
                             ),
                             TextButton(
                               onPressed: () async {
-                                // 버튼 1이 눌렸을 때 실행되는 코드
                                 await player.seek(player.state.position +
-                                    Duration(seconds: 5));
+                                    Duration(seconds: 10));
                               },
-                              child: Icon(Icons.forward_5,
+                              child: Icon(Icons.forward_10,
                                   size: 35, color: Colors.white),
                             ),
+                            // TextButton(
+                            //   onPressed: ,
+                            //   child: Icon(Icons.update,
+                            //       size: 35, color: Colors.white),
+                            // ),
                             TextButton(
-                              onPressed: () async {
-                                // 버튼 3이 눌렸을 때 실행되는 코드
-                                await player.seek(player.state.duration);
-                              },
-                              child: Text(
-                                'LIVE',
-                                style: TextStyle(
-                                  color: Colors.white, // 텍스트 버튼 색상 변경
-                                  fontSize: 25, // 텍스트 버튼 폰트 크기 변경
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isLoading = true;
-                                });
-
-                                _initialize();
-                              },
+                              onPressed: _showResetConfirmationDialog,
                               child: Text(
                                 'Reset',
-                                style: TextStyle(
-                                  color: Colors.teal, // 텍스트 버튼 색상 변경
-                                  fontSize: 25, // 텍스트 버튼 폰트 크기 변경
-                                ),
+                                style:
+                                    TextStyle(color: Colors.teal, fontSize: 25),
                               ),
                             ),
                           ],
@@ -538,6 +579,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       'hls',
       '-s',
       '960x540',
+      '-vf',
+      'lenscorrection=cx=0.5:cy=0.5:k1=-0.227:k2=-0.022',
       '-hls_time',
       '2',
       '-crf',
@@ -780,6 +823,36 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     isPressed[3] = false;
     isPressed[4] = false;
     isPressed[5] = false;
+  }
+
+  void _showResetConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Reset Video'),
+          content: Text('Are you sure you want to reset the video?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+            ),
+            TextButton(
+              child: Text('Reset'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                setState(() {
+                  _isLoading = true;
+                });
+                _initialize(); // 비디오 초기화
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildPlayerSection5(

@@ -236,27 +236,27 @@ class _MatchScreenState extends State<MatchScreen> {
                                                   controls: (state) =>
                                                       MaterialVideoControlsTheme(
                                                     normal:
-                                                        MaterialVideoControlsThemeData(
+                                                        const MaterialVideoControlsThemeData(
                                                       volumeGesture: false,
                                                       brightnessGesture: false,
                                                       seekOnDoubleTap:
                                                           true, // 더블 탭으로 seek 활성화
-                                                      bottomButtonBar: const [
+                                                      bottomButtonBar: [
                                                         MaterialPositionIndicator(),
                                                         Spacer(),
                                                         // MaterialFullscreenButton() 제거됨
                                                       ],
                                                     ),
                                                     fullscreen:
-                                                        MaterialVideoControlsThemeData(
+                                                        const MaterialVideoControlsThemeData(
                                                       volumeGesture: false,
                                                       brightnessGesture: false,
                                                       seekOnDoubleTap:
                                                           true, // 더블 탭으로 seek 활성화
-                                                      bottomButtonBar: const [
+                                                      bottomButtonBar: [
                                                         MaterialPositionIndicator(),
                                                         Spacer(),
-                                                        // MaterialFullscreenButton() 제거됨
+                                                        // MaterialFullscreenButton()
                                                       ],
                                                     ),
                                                     child:
@@ -310,13 +310,13 @@ class _MatchScreenState extends State<MatchScreen> {
                                     child: Icon(Icons.forward_10,
                                         size: 35, color: Colors.white),
                                   ),
+                                  // TextButton(
+                                  //   onPressed: ,
+                                  //   child: Icon(Icons.update,
+                                  //       size: 35, color: Colors.white),
+                                  // ),
                                   TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _isLoading = true;
-                                      });
-                                      _initialize();
-                                    },
+                                    onPressed: _showResetConfirmationDialog,
                                     child: Text(
                                       'Reset',
                                       style: TextStyle(
@@ -660,7 +660,6 @@ class _MatchScreenState extends State<MatchScreen> {
         print('Error during dispose: $e');
       }
     });
-
     player.dispose();
     pool.dispose();
     super.dispose();
@@ -809,6 +808,36 @@ class _MatchScreenState extends State<MatchScreen> {
     int minutes = (seconds % 3600) ~/ 60;
     int remainingSeconds = seconds % 60;
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showResetConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Reset Video'),
+          content: Text('Are you sure you want to reset the video?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+            ),
+            TextButton(
+              child: Text('Reset'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                setState(() {
+                  _isLoading = true;
+                });
+                _initialize(); // 비디오 초기화
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildPlayerSection(int index) {
