@@ -12,6 +12,7 @@ import 'package:soundpool/soundpool.dart';
 import 'package:flutter/foundation.dart';
 import 'services/web_socket_service.dart';
 import 'playerSelection.dart';
+import 'fullscreen.dart';
 
 class MatchScreen extends StatefulWidget {
   GamePlayer player1;
@@ -101,31 +102,59 @@ class _MatchScreenState extends State<MatchScreen> {
               flex: 1,
               child: Row(
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildPlayerSection(0),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Inning: ${matchData.inning}',
-                          style: TextStyle(fontSize: playtimeFontSize),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          formattedTime,
-                          style: TextStyle(fontSize: playtimeFontSize),
-                        ),
-                      ],
+                  if (!isSeatsSwapped) ...[
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(0),
                     ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: _buildPlayerSection(1),
-                  ),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Inning: ${matchData.inning}',
+                            style: TextStyle(fontSize: playtimeFontSize),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            formattedTime,
+                            style: TextStyle(fontSize: playtimeFontSize),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(1),
+                    ),
+                  ] else ...[
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(1),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Inning: ${matchData.inning}',
+                            style: TextStyle(fontSize: playtimeFontSize),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            formattedTime,
+                            style: TextStyle(fontSize: playtimeFontSize),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(0),
+                    ),
+                  ]
                 ],
               ),
             ),
@@ -195,12 +224,61 @@ class _MatchScreenState extends State<MatchScreen> {
                               child: Center(
                                 child: _isLoading
                                     ? Center(child: CircularProgressIndicator())
-                                    : AspectRatio(
-                                        aspectRatio: 16 / 9,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Video(controller: controller),
-                                        ),
+                                    : Stack(
+                                        children: [
+                                          AspectRatio(
+                                            aspectRatio: 16 / 9,
+                                            child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
+                                                child: Video(
+                                                  controller: controller,
+                                                  controls: (state) =>
+                                                      MaterialVideoControlsTheme(
+                                                    normal:
+                                                        MaterialVideoControlsThemeData(
+                                                      volumeGesture: false,
+                                                      brightnessGesture: false,
+                                                      bottomButtonBar: const [
+                                                        MaterialPositionIndicator(),
+                                                        Spacer(),
+                                                      ],
+                                                    ),
+                                                    fullscreen:
+                                                        MaterialVideoControlsThemeData(
+                                                      volumeGesture: false,
+                                                      brightnessGesture: false,
+                                                      bottomButtonBar: const [
+                                                        MaterialPositionIndicator(),
+                                                        Spacer(),
+                                                      ],
+                                                    ),
+                                                    child:
+                                                        MaterialVideoControls(
+                                                            state),
+                                                  ),
+                                                )),
+                                          ),
+                                          Positioned(
+                                            top: 10,
+                                            right: 10,
+                                            child: IconButton(
+                                              icon: Icon(Icons.fullscreen),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        FullscreenVideoPage(
+                                                      controller: controller,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                               ),
                             ),
@@ -225,16 +303,6 @@ class _MatchScreenState extends State<MatchScreen> {
                                     },
                                     child: Icon(Icons.forward_5,
                                         size: 35, color: Colors.white),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      await player.seek(player.state.duration);
-                                    },
-                                    child: Text(
-                                      'LIVE',
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 25),
-                                    ),
                                   ),
                                   TextButton(
                                     onPressed: () {
@@ -343,9 +411,14 @@ class _MatchScreenState extends State<MatchScreen> {
                                 ),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: InkWell(
-                                      onTap: () {
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueGrey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                      onPressed: () {
                                         setState(() {
                                           final matchData =
                                               Provider.of<MatchData>(context,
@@ -353,25 +426,13 @@ class _MatchScreenState extends State<MatchScreen> {
                                           matchData.toggleColors();
                                         });
                                       },
-                                      child: Container(
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                              color: Colors.black, width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: ClipPath(
-                                          clipper: DiagonalClipper(),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.yellow,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                          ),
-                                        ),
+                                      child: Column(
+                                        children: [
+                                          Text('CHANGE',
+                                              style: TextStyle(fontSize: 16)),
+                                          Text('BALL',
+                                              style: TextStyle(fontSize: 16)),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -549,6 +610,8 @@ class _MatchScreenState extends State<MatchScreen> {
       'hls',
       '-s',
       '960x540',
+      '-vf',
+      'lenscorrection=cx=0.5:cy=0.5:k1=-0.227:k2=-0.022',
       '-hls_time',
       '4',
       '-crf',
@@ -851,6 +914,62 @@ class _MatchScreenState extends State<MatchScreen> {
         ),
       ),
     );
+  }
+}
+
+class CustomProgressBar extends StatefulWidget {
+  final VideoController controller;
+
+  CustomProgressBar({required this.controller});
+
+  @override
+  _CustomProgressBarState createState() => _CustomProgressBarState();
+}
+
+class _CustomProgressBarState extends State<CustomProgressBar> {
+  late StreamSubscription<Duration> _durationSubscription;
+  Duration _realDuration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _realDuration = widget.controller.player.state.duration;
+    _durationSubscription =
+        widget.controller.player.stream.duration.listen((duration) {
+      setState(() {
+        _realDuration = duration;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Duration>(
+      stream: widget.controller.player.stream.position,
+      builder: (context, snapshot) {
+        final position = snapshot.data ?? Duration.zero;
+        return SliderTheme(
+          data: SliderThemeData(
+            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+            overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
+          ),
+          child: Slider(
+            value: position.inMilliseconds.toDouble(),
+            max: _realDuration.inMilliseconds.toDouble(),
+            onChanged: (value) {
+              widget.controller.player
+                  .seek(Duration(milliseconds: value.toInt()));
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _durationSubscription.cancel();
+    super.dispose();
   }
 }
 
