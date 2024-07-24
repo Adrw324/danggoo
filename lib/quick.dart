@@ -73,7 +73,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   bool _isLoading = true;
 
   Soundpool pool = Soundpool(streamType: StreamType.notification);
-  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0];
+  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   Widget build(BuildContext context) {
     FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
@@ -489,6 +489,22 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         await rootBundle.load("assets/winner.mp3").then((ByteData soundData) {
       return pool.load(soundData);
     });
+    soundId[7] =
+        await rootBundle.load("assets/onep.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[8] =
+        await rootBundle.load("assets/twop.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[9] =
+        await rootBundle.load("assets/threep.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[10] =
+        await rootBundle.load("assets/fanfare.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
   }
 
   Future<void> _initialize() async {
@@ -580,7 +596,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       '-s',
       '960x540',
       '-vf',
-      'lenscorrection=cx=0.5:cy=0.5:k1=-0.227:k2=-0.022',
+      'lenscorrection=cx=0.5:cy=0.5:k1=-0.165:k2=-0.0165',
       '-hls_time',
       '2',
       '-crf',
@@ -681,10 +697,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     );
 
     startTimer();
-    widget.webSocketService.sendMessage({
-      'type': 'GameStarted',
-      'tableId': table,
-    });
+    // widget.webSocketService.sendMessage({
+    //   'type': 'GameStarted',
+    //   'tableId': table,
+    // });
   }
 
   void finishGame(GameData gameData) {
@@ -740,10 +756,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     );
 
     finish();
-    widget.webSocketService.sendMessage({
-      'type': 'GameEnded',
-      'tableId': table,
-    });
+    // widget.webSocketService.sendMessage({
+    //   'type': 'GameEnded',
+    //   'tableId': table,
+    // });
     Navigator.pop(context);
   }
 
@@ -808,6 +824,21 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     setState(() {
       buttonCounts[index] += count;
     });
+
+    switch (count) {
+      case 1:
+        await pool.play(soundId[7]); // onep.mp3
+        break;
+      case 2:
+        await pool.play(soundId[8]); // twop.mp3
+        break;
+      case 3:
+        await pool.play(soundId[9]); // threep.mp3
+        break;
+      case 5:
+        await pool.play(soundId[10]); // fanfare.mp3
+        break;
+    }
   }
 
   Future<void> decrementButtonCount(int index) async {
@@ -870,27 +901,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     Future<void> checkWinner(
         int buttonCount, int handicap, int index, bool isHandicap) async {
-      int streamId0 = await pool.play(soundId[0]);
       if (!isHandicap) return;
-      if (handicap - buttonCount == 5) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[5]);
-      } else if (handicap - buttonCount == 4) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[4]);
-      } else if (handicap - buttonCount == 3) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[3]);
-      } else if (handicap - buttonCount == 2) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[2]);
-      } else if (handicap - buttonCount == 1) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[1]);
-      }
-      if (buttonCount >= handicap) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[6]);
+      int remainingPoints = handicap - buttonCount;
+      if (remainingPoints >= 1 && remainingPoints <= 5) {
+        await pool.play(soundId[remainingPoints]);
+      } else if (buttonCount >= handicap) {
+        await pool.play(soundId[6]); // winner.mp3
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -906,10 +922,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text(
-                      'CLOSE',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text('CLOSE', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],
@@ -1282,27 +1295,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     Future<void> checkWinner(
         int buttonCount, int handicap, int index, bool isHandicap) async {
-      int streamId0 = await pool.play(soundId[0]);
       if (!isHandicap) return;
-      if (handicap - buttonCount == 5) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[5]);
-      } else if (handicap - buttonCount == 4) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[4]);
-      } else if (handicap - buttonCount == 3) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[3]);
-      } else if (handicap - buttonCount == 2) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[2]);
-      } else if (handicap - buttonCount == 1) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[1]);
-      }
-      if (buttonCount >= handicap) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[6]);
+      int remainingPoints = handicap - buttonCount;
+      if (remainingPoints >= 1 && remainingPoints <= 5) {
+        await pool.play(soundId[remainingPoints]);
+      } else if (buttonCount >= handicap) {
+        await pool.play(soundId[6]); // winner.mp3
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -1318,10 +1316,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text(
-                      'CLOSE',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text('CLOSE', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],
@@ -1700,27 +1695,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     Future<void> checkWinner(
         int buttonCount, int handicap, int index, bool isHandicap) async {
-      int streamId0 = await pool.play(soundId[0]);
       if (!isHandicap) return;
-      if (handicap - buttonCount == 5) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[5]);
-      } else if (handicap - buttonCount == 4) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[4]);
-      } else if (handicap - buttonCount == 3) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[3]);
-      } else if (handicap - buttonCount == 2) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[2]);
-      } else if (handicap - buttonCount == 1) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[1]);
-      }
-      if (buttonCount >= handicap) {
-        // 팝업 표시
-        int streamId = await pool.play(soundId[6]);
+      int remainingPoints = handicap - buttonCount;
+      if (remainingPoints >= 1 && remainingPoints <= 5) {
+        await pool.play(soundId[remainingPoints]);
+      } else if (buttonCount >= handicap) {
+        await pool.play(soundId[6]); // winner.mp3
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -1736,10 +1716,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text(
-                      'CLOSE',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text('CLOSE', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],

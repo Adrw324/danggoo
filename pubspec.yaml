@@ -85,6 +85,10 @@ flutter:
     - assets/winner.mp3
     - assets/back1.jpg
     - assets/back2.jpg
+    - assets/onep.mp3
+    - assets/twop.mp3
+    - assets/threep.mp3
+    - assets/fanfare.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

@@ -716,10 +716,10 @@ class _MatchScreenState extends State<MatchScreen> {
     gameStartTime = DateTime.now();
     matchData.startGame(today, gameStartTime);
     startTimer();
-    widget.webSocketService.sendMessage({
-      'type': 'GameStarted',
-      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
-    });
+    // widget.webSocketService.sendMessage({
+    //   'type': 'GameStarted',
+    //   'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    // });
   }
 
   void finishGame(MatchData matchData) {
@@ -760,10 +760,10 @@ class _MatchScreenState extends State<MatchScreen> {
     matchData.finishGame(today, gameStartTime, end);
     matchData._resetMatchDataWithoutNotify(); // 매치 데이터 초기화
     finish();
-    widget.webSocketService.sendMessage({
-      'type': 'GameEnded',
-      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
-    });
+    // widget.webSocketService.sendMessage({
+    //   'type': 'GameEnded',
+    //   'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    // });
     Navigator.pop(context);
   }
 
