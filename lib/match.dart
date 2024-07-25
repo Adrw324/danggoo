@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import 'services/web_socket_service.dart';
 import 'playerSelection.dart';
 import 'fullscreen.dart';
+import 'video-manager.dart';
 
 class MatchScreen extends StatefulWidget {
   GamePlayer player1;
@@ -42,17 +43,12 @@ class _MatchScreenState extends State<MatchScreen> {
 
   bool isSeatsSwapped = false;
 
-  late FlutterFFmpeg _ffmpeg;
-  late String inputPath =
-      'rtsp://admin:a1234567@192.168.50.106:554/h264Preview_01_main';
-  late String documentDirectory;
-  late String outputPath;
-  late final player = Player();
-  late final controller = VideoController(player);
+  late VideoManager videoManager;
+
   bool _isLoading = true;
 
   Soundpool pool = Soundpool(streamType: StreamType.notification);
-  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0];
+  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   late StreamSubscription _messageSubscription;
 
@@ -232,7 +228,8 @@ class _MatchScreenState extends State<MatchScreen> {
                                                 padding:
                                                     const EdgeInsets.all(8.0),
                                                 child: Video(
-                                                  controller: controller,
+                                                  controller:
+                                                      videoManager.controller,
                                                   controls: (state) =>
                                                       MaterialVideoControlsTheme(
                                                     normal:
@@ -276,7 +273,8 @@ class _MatchScreenState extends State<MatchScreen> {
                                                   MaterialPageRoute(
                                                     builder: (context) =>
                                                         FullscreenVideoPage(
-                                                      controller: controller,
+                                                      controller: videoManager
+                                                          .controller,
                                                     ),
                                                   ),
                                                 );
@@ -296,16 +294,18 @@ class _MatchScreenState extends State<MatchScreen> {
                                 children: [
                                   TextButton(
                                     onPressed: () async {
-                                      await player.seek(player.state.position -
-                                          Duration(seconds: 10));
+                                      await videoManager.player.seek(
+                                          videoManager.player.state.position -
+                                              Duration(seconds: 10));
                                     },
                                     child: Icon(Icons.replay_10,
                                         size: 35, color: Colors.white),
                                   ),
                                   TextButton(
                                     onPressed: () async {
-                                      await player.seek(player.state.position +
-                                          Duration(seconds: 10));
+                                      await videoManager.player.seek(
+                                          videoManager.player.state.position +
+                                              Duration(seconds: 10));
                                     },
                                     child: Icon(Icons.forward_10,
                                         size: 35, color: Colors.white),
@@ -483,15 +483,35 @@ class _MatchScreenState extends State<MatchScreen> {
       _initializeData();
     });
 
+    videoManager = VideoManager();
+    _initializeVideo();
+
     _settingButtonSound();
-    _initialize();
+  }
+
+  Future<void> _initializeVideo() async {
+    final gameData = Provider.of<GameData>(context, listen: false);
+    try {
+      await videoManager.initialize(gameData.camera_uri);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Video initialization error: $e');
+      // 사용자에게 에러 메시지 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('비디오 초기화 중 오류가 발생했습니다.')),
+        );
+      }
+    }
   }
 
   void _initializeData() {
     final gameData = Provider.of<GameData>(context, listen: false);
     final matchData = Provider.of<MatchData>(context, listen: false);
-
-    inputPath = gameData.camera_uri;
 
     matchData.initializePlayers(
       widget.player1,
@@ -532,136 +552,32 @@ class _MatchScreenState extends State<MatchScreen> {
         await rootBundle.load("assets/winner.mp3").then((ByteData soundData) {
       return pool.load(soundData);
     });
-  }
-
-  Future<void> _initialize() async {
-    await _getDirectory();
-    await _deleteFilesInDirectory(outputPath);
-    _startConversion();
-    await _waitForSegment();
-    await _initializeController();
-  }
-
-  Future<void> _waitForSegment() async {
-    // 일정 간격으로 isSegmentGenerated를 체크하다가 생성되면 반환
-    while (!(await isSegmentGenerated())) {
-      await Future.delayed(Duration(seconds: 1)); // 적절한 간격으로 조절
-    }
-  }
-
-  Future<void> _initializeController() async {
-    print('Initializing Controller!!!');
-
-    File file = File(outputPath + "/output.m3u8");
-
-    if (await file.exists()) {
-      print('파일이 존재합니다.');
-      // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
-      player.open(Media('file://' + outputPath + "/output.m3u8"));
-      setState(() {
-        _isLoading = false;
-      });
-    } else {
-      print('파일이 존재하지 않습니다.');
-    }
-  }
-
-  Future<void> _getDirectory() async {
-    documentDirectory = await _getDocumentDirectory();
-
-    // Create a subdirectory in the document directory to save the files
-    outputPath = '$documentDirectory/ffmpeg_output';
-  }
-
-  Future<void> _startConversion() async {
-    print('AAA');
-
-    await Directory(outputPath).create(recursive: true);
-    _ffmpeg = FlutterFFmpeg();
-    // Execute the FFmpeg command
-    _runFFmpeg(inputPath, outputPath);
-  }
-
-  Future<bool> isSegmentGenerated() async {
-    Directory directory = Directory(outputPath);
-    if (await directory.exists()) {
-      List<FileSystemEntity> files = directory.listSync();
-      for (var file in files) {
-        if (file is File && file.path.endsWith('.ts')) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  Future<String> _getDocumentDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
-  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
-    List<String> arguments = [
-      '-i',
-      inputPath,
-      '-c:v',
-      'libx264',
-      '-an',
-      '-threads',
-      '2',
-      '-preset',
-      'ultrafast',
-      '-f',
-      'hls',
-      '-s',
-      '960x540',
-      '-vf',
-      'lenscorrection=cx=0.5:cy=0.5:k1=-0.227:k2=-0.022',
-      '-hls_time',
-      '4',
-      '-crf',
-      '28',
-      '-hls_playlist_type',
-      'event',
-      '-hls_list_size',
-      '0',
-      '-hls_segment_filename',
-      // '-loglevel',
-      // 'quiet',
-      '$outputPath/output_%03d.ts',
-      '$outputPath/output.m3u8',
-    ];
-
-    return await _ffmpeg.executeWithArguments(arguments);
-  }
-
-  Future<void> _deleteFilesInDirectory(String directoryPath) async {
-    try {
-      final directory = Directory(directoryPath);
-      if (await directory.exists()) {
-        await directory.delete(recursive: true);
-        print('Files in $directoryPath deleted successfully.');
-      } else {
-        print('Directory $directoryPath does not exist.');
-      }
-    } catch (e) {
-      print('Error deleting files: $e');
-    }
+    soundId[7] =
+        await rootBundle.load("assets/onep.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[8] =
+        await rootBundle.load("assets/twop.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[9] =
+        await rootBundle.load("assets/threep.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
+    soundId[10] =
+        await rootBundle.load("assets/fanfare.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
   }
 
   @override
   void dispose() {
-    Future.delayed(Duration.zero, () async {
-      try {
-        await _deleteFilesInDirectory(outputPath);
-        await _ffmpeg.cancel();
-      } catch (e) {
-        print('Error during dispose: $e');
-      }
-    });
-    player.dispose();
+    videoManager.dispose();
     pool.dispose();
+
+    if (_timer != null) {
+      _timer.cancel();
+    }
     super.dispose();
   }
 
@@ -716,10 +632,10 @@ class _MatchScreenState extends State<MatchScreen> {
     gameStartTime = DateTime.now();
     matchData.startGame(today, gameStartTime);
     startTimer();
-    // widget.webSocketService.sendMessage({
-    //   'type': 'GameStarted',
-    //   'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
-    // });
+    widget.webSocketService.sendMessage({
+      'type': 'GameStarted',
+      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    });
   }
 
   void finishGame(MatchData matchData) {
@@ -760,10 +676,10 @@ class _MatchScreenState extends State<MatchScreen> {
     matchData.finishGame(today, gameStartTime, end);
     matchData._resetMatchDataWithoutNotify(); // 매치 데이터 초기화
     finish();
-    // widget.webSocketService.sendMessage({
-    //   'type': 'GameEnded',
-    //   'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
-    // });
+    widget.webSocketService.sendMessage({
+      'type': 'GameEnded',
+      'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
+    });
     Navigator.pop(context);
   }
 
@@ -831,7 +747,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 setState(() {
                   _isLoading = true;
                 });
-                _initialize(); // 비디오 초기화
+                _initializeVideo(); // 비디오 초기화
               },
             ),
           ],

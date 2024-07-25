@@ -65,22 +65,27 @@ class _TabletHomePageState extends State<TabletHomePage> {
   @override
   void initState() {
     super.initState();
-    final gameData = Provider.of<GameData>(context, listen: false);
-
-    gameData.loadGameData().then((_) {
-      _webSocketService = WebSocketService(gameData.manager_uri, gameData);
-      _webSocketService.statusStream.listen((status) {
-        setState(() {
-          _status = status;
-        });
-      });
-      _webSocketService.messageStream.listen((message) {
-        setState(() {
-          _latestMessage = message;
-        });
-      });
-      _webSocketService.connect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeWebSocket();
     });
+  }
+
+  Future<void> _initializeWebSocket() async {
+    final gameData = Provider.of<GameData>(context, listen: false);
+    await gameData.loadGameData();
+
+    _webSocketService = WebSocketService(gameData.manager_uri, gameData);
+    _webSocketService.statusStream.listen((status) {
+      setState(() {
+        _status = status;
+      });
+    });
+    _webSocketService.messageStream.listen((message) {
+      setState(() {
+        _latestMessage = message;
+      });
+    });
+    await _webSocketService.connect();
   }
 
   @override
@@ -89,15 +94,24 @@ class _TabletHomePageState extends State<TabletHomePage> {
     super.dispose();
   }
 
-  void _retryConnection() {
-    final gameData = Provider.of<GameData>(context, listen: false);
-    gameData.loadGameData().then((_) {
-      _webSocketService.retryConnection();
+  Future<void> _retryConnection() async {
+    setState(() {
+      _status = "Reconnecting...";
     });
+
+    try {
+      await _webSocketService.retryConnection();
+    } catch (e) {
+      print("Error during reconnection: $e");
+      setState(() {
+        _status = "Reconnection failed: $e";
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print("Current status in build: $_status");
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 1, 1, 1),
       appBar: AppBar(
@@ -223,7 +237,9 @@ class _TabletHomePageState extends State<TabletHomePage> {
                       ),
                       SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: _retryConnection,
+                        onPressed: () async {
+                          await _retryConnection();
+                        },
                         child: Text('Reconnect'),
                         style: ElevatedButton.styleFrom(),
                       ),

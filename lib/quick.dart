@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:media_kit/media_kit.dart';
 import 'services/web_socket_service.dart';
-
+import 'video-manager.dart';
 import 'package:flutter/services.dart';
 import 'package:soundpool/soundpool.dart';
 import 'fullscreen.dart';
@@ -58,17 +54,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   List<bool> isPressed = [false, false, false, false, false, false];
 
-  late FlutterFFmpeg _ffmpeg;
-
-  late String inputPath =
-      'rtsp://admin:a1234567@192.168.50.106:554/h264Preview_01_main';
-
-  late String documentDirectory;
-
-  late String outputPath;
-
-  late final player = Player();
-  late final controller = VideoController(player);
+  late VideoManager videoManager;
 
   bool _isLoading = true;
 
@@ -76,16 +62,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   Widget build(BuildContext context) {
-    FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
-
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 10;
     double scoreBtnFontSize = screenHeight / 14;
     double PlaytimeFontSize = screenHeight / 8;
-
-    List<Widget> playerSections = [];
-
-    final gameData = Provider.of<GameData>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -184,43 +164,39 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             AspectRatio(
                                               aspectRatio: 16 / 9,
                                               child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Video(
-                                                    controller: controller,
-                                                    controls: (state) =>
-                                                        MaterialVideoControlsTheme(
-                                                      normal:
-                                                          const MaterialVideoControlsThemeData(
-                                                        volumeGesture: false,
-                                                        brightnessGesture:
-                                                            false,
-                                                        seekOnDoubleTap:
-                                                            true, // 더블 탭으로 seek 활성화
-                                                        bottomButtonBar: [
-                                                          MaterialPositionIndicator(),
-                                                          Spacer(),
-                                                          // MaterialFullscreenButton() 제거됨
-                                                        ],
-                                                      ),
-                                                      fullscreen:
-                                                          const MaterialVideoControlsThemeData(
-                                                        volumeGesture: false,
-                                                        brightnessGesture:
-                                                            false,
-                                                        seekOnDoubleTap:
-                                                            true, // 더블 탭으로 seek 활성화
-                                                        bottomButtonBar: [
-                                                          MaterialPositionIndicator(),
-                                                          Spacer(),
-                                                          // MaterialFullscreenButton()
-                                                        ],
-                                                      ),
-                                                      child:
-                                                          MaterialVideoControls(
-                                                              state),
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
+                                                child: Video(
+                                                  controller:
+                                                      videoManager.controller,
+                                                  controls: (state) =>
+                                                      MaterialVideoControlsTheme(
+                                                    normal:
+                                                        const MaterialVideoControlsThemeData(
+                                                      volumeGesture: false,
+                                                      brightnessGesture: false,
+                                                      seekOnDoubleTap: true,
+                                                      bottomButtonBar: [
+                                                        MaterialPositionIndicator(),
+                                                        Spacer(),
+                                                      ],
                                                     ),
-                                                  )),
+                                                    fullscreen:
+                                                        const MaterialVideoControlsThemeData(
+                                                      volumeGesture: false,
+                                                      brightnessGesture: false,
+                                                      seekOnDoubleTap: true,
+                                                      bottomButtonBar: [
+                                                        MaterialPositionIndicator(),
+                                                        Spacer(),
+                                                      ],
+                                                    ),
+                                                    child:
+                                                        MaterialVideoControls(
+                                                            state),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                             Positioned(
                                               top: 10,
@@ -233,7 +209,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                     MaterialPageRoute(
                                                       builder: (context) =>
                                                           FullscreenVideoPage(
-                                                        controller: controller,
+                                                        controller: videoManager
+                                                            .controller,
                                                       ),
                                                     ),
                                                   );
@@ -256,16 +233,18 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           children: [
                             TextButton(
                               onPressed: () async {
-                                await player.seek(player.state.position -
-                                    Duration(seconds: 10));
+                                await videoManager.player.seek(
+                                    videoManager.player.state.position -
+                                        Duration(seconds: 10));
                               },
                               child: Icon(Icons.replay_10,
                                   size: 35, color: Colors.white),
                             ),
                             TextButton(
                               onPressed: () async {
-                                await player.seek(player.state.position +
-                                    Duration(seconds: 10));
+                                await videoManager.player.seek(
+                                    videoManager.player.state.position +
+                                        Duration(seconds: 10));
                               },
                               child: Icon(Icons.forward_10,
                                   size: 35, color: Colors.white),
@@ -446,17 +425,35 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         }
       }
     });
-    final gameData = Provider.of<GameData>(context, listen: false);
-
-    inputPath = gameData.camera_uri;
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
+    videoManager = VideoManager();
+    _initializeVideo();
+
     _settingButtonSound();
 
-    _initialize();
-
     print('HANDICAPS ' + '${widget.handicabScores}');
+  }
+
+  Future<void> _initializeVideo() async {
+    final gameData = Provider.of<GameData>(context, listen: false);
+    try {
+      await videoManager.initialize(gameData.camera_uri);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Video initialization error: $e');
+      // 사용자에게 에러 메시지 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('비디오 초기화 중 오류가 발생했습니다.')),
+        );
+      }
+    }
   }
 
   Future<void> _settingButtonSound() async {
@@ -507,144 +504,14 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     });
   }
 
-  Future<void> _initialize() async {
-    await _getDirectory();
-    await _deleteFilesInDirectory(outputPath);
-    _startConversion();
-    await _waitForSegment();
-    await _initializeController();
-  }
-
-  Future<void> _waitForSegment() async {
-    // 일정 간격으로 isSegmentGenerated를 체크하다가 생성되면 반환
-    while (!(await isSegmentGenerated())) {
-      await Future.delayed(Duration(seconds: 1)); // 적절한 간격으로 조절
-    }
-  }
-
-  Future<void> _initializeController() async {
-    print('Initializing Controller!!!');
-
-    File file = File(outputPath + "/output.m3u8");
-
-    if (await file.exists()) {
-      print('파일이 존재합니다.');
-      // playerView = MyPlayerView(video_url: outputPath + '/output.m3u8');
-      try {
-        await player.open(Media('file://' + outputPath + "/output.m3u8"));
-        print('플레이어 초기화 성공');
-        setState(() {
-          _isLoading = false;
-        });
-      } catch (e) {
-        print('플레이어 초기화 실패: $e');
-        // 에러 처리 로직 추가
-      }
-    } else {
-      print('파일이 존재하지 않습니다.');
-    }
-  }
-
-  Future<void> _getDirectory() async {
-    documentDirectory = await _getDocumentDirectory();
-
-    // Create a subdirectory in the document directory to save the files
-    outputPath = '$documentDirectory/ffmpeg_output';
-  }
-
-  Future<void> _startConversion() async {
-    print('AAA');
-
-    await Directory(outputPath).create(recursive: true);
-    _ffmpeg = FlutterFFmpeg();
-    // Execute the FFmpeg command
-    _runFFmpeg(inputPath, outputPath);
-  }
-
-  Future<bool> isSegmentGenerated() async {
-    Directory directory = Directory(outputPath);
-    if (await directory.exists()) {
-      List<FileSystemEntity> files = directory.listSync();
-      for (var file in files) {
-        if (file is File && file.path.endsWith('.ts')) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  Future<String> _getDocumentDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
-  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
-    List<String> arguments = [
-      '-i',
-      inputPath,
-      '-c:v',
-      'libx264',
-      '-an',
-      '-threads',
-      '2',
-      '-preset',
-      'ultrafast',
-      '-f',
-      'hls',
-      '-s',
-      '960x540',
-      '-vf',
-      'lenscorrection=cx=0.5:cy=0.5:k1=-0.165:k2=-0.0165',
-      '-hls_time',
-      '2',
-      '-crf',
-      '28',
-      '-hls_playlist_type',
-      'event',
-      '-hls_list_size',
-      '0',
-      '-hls_segment_filename',
-      // '-loglevel',
-      // 'quiet',
-      '$outputPath/output_%03d.ts',
-      '$outputPath/output.m3u8',
-    ];
-
-    return await _ffmpeg.executeWithArguments(arguments);
-  }
-
-  Future<void> _deleteFilesInDirectory(String directoryPath) async {
-    try {
-      final directory = Directory(directoryPath);
-      if (await directory.exists()) {
-        await directory.delete(recursive: true);
-        print('Files in $directoryPath deleted successfully.');
-      } else {
-        print('Directory $directoryPath does not exist.');
-      }
-    } catch (e) {
-      print('Error deleting files: $e');
-    }
-  }
-
   @override
   Future<void> dispose() async {
-    Future.delayed(Duration.zero, () async {
-      try {
-        // await _controller.dispose();
-        await _deleteFilesInDirectory(outputPath);
-        print('Files Deleted!');
-        await _ffmpeg.cancel();
-      } catch (e) {
-        print('Error during dispose: $e');
-      }
-    });
-
-    player.dispose();
+    videoManager.dispose();
     pool.dispose();
     _messageSubscription.cancel();
+    if (_timer != null) {
+      _timer.cancel();
+    }
     print('Disposed!');
 
     super.dispose();
@@ -780,10 +647,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   void startTimer() {
     if (!isTimerRunning) {
       _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-        setState(() {
-          timerSeconds++;
-          formattedTime = _formatTime(timerSeconds);
-        });
+        if (mounted) {
+          setState(() {
+            timerSeconds++;
+            formattedTime = _formatTime(timerSeconds);
+          });
+        }
       });
       setState(() {
         isTimerRunning = true;
@@ -877,7 +746,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                 setState(() {
                   _isLoading = true;
                 });
-                _initialize(); // 비디오 초기화
+                _initializeVideo(); // 비디오 초기화
               },
             ),
           ],

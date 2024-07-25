@@ -6,21 +6,46 @@ import '../global.dart';
 
 class WebSocketService {
   WebSocketChannel? _channel;
-  final _statusController = StreamController<String>.broadcast();
-  final _messageController = StreamController<String>.broadcast();
+  StreamController<String>? _statusController;
+  StreamController<String>? _messageController;
   final String _serverUrl;
   final GameData _gameData;
   bool _isConnecting = false;
   bool _isClosed = false;
 
-  WebSocketService(this._serverUrl, this._gameData);
+  WebSocketService(this._serverUrl, this._gameData) {
+    _initControllers();
+  }
 
-  Stream<String> get statusStream => _statusController.stream;
-  Stream<String> get messageStream => _messageController.stream;
+  Stream<String> get statusStream => _statusController!.stream;
+  Stream<String> get messageStream => _messageController!.stream;
+
+  void _initControllers() {
+    _statusController = StreamController<String>.broadcast();
+    _messageController = StreamController<String>.broadcast();
+  }
+
+  Future<void> retryConnection() async {
+    if (_isClosed) {
+      print("Cannot retry connection: WebSocketService is closed");
+      return;
+    }
+
+    print("Closing existing connection...");
+    await close(); // 기존 연결을 완전히 종료
+
+    print("Reinitializing WebSocket service...");
+    _isClosed = false; // 서비스를 다시 열기
+    _initControllers();
+
+    print("Attempting to establish new connection...");
+    await connect(); // 새로운 연결 시도
+  }
 
   Future<void> connect() async {
     if (_isConnecting || _isClosed) return;
     _isConnecting = true;
+    _updateStatus("Connecting...");
 
     try {
       await _closeChannel();
@@ -30,12 +55,11 @@ class WebSocketService {
       print("Attempting to connect to: $url");
 
       _channel = IOWebSocketChannel.connect(Uri.parse(url));
-      _updateStatus("Connecting...");
 
       _channel!.stream.listen(
         (message) {
           print("Received message: $message");
-          _messageController.add(message.toString());
+          _messageController?.add(message.toString());
           _handleMessage(message);
         },
         onError: (error) {
@@ -72,28 +96,28 @@ class WebSocketService {
           int tableId = jsonMessage['tableId'];
           print("Received ForceStartGame for table $tableId");
           if (tableId == _gameData.tabletNumber) {
-            _messageController.add('ForceStartGame');
+            _messageController!.add('ForceStartGame');
           }
           break;
         case 'ForceEndGame':
           int tableId = jsonMessage['tableId'];
           print("Received ForceEndGame for table $tableId");
           if (tableId == _gameData.tabletNumber) {
-            _messageController.add('ForceEndGame');
+            _messageController!.add('ForceEndGame');
           }
           break;
         case 'GameStarted':
           int tableId = jsonMessage['tableId'];
           print("Received GameStarted for table $tableId");
           if (tableId == _gameData.tabletNumber) {
-            _messageController.add('GameStarted');
+            _messageController!.add('GameStarted');
           }
           break;
         case 'GameEnded':
           int tableId = jsonMessage['tableId'];
           print("Received GameEnded for table $tableId");
           if (tableId == _gameData.tabletNumber) {
-            _messageController.add('GameEnded');
+            _messageController!.add('GameEnded');
           }
           break;
         case 'connectionStatus':
@@ -146,24 +170,16 @@ class WebSocketService {
     _isClosed = true;
     print("Closing WebSocket connection");
     await _closeChannel();
-    await _statusController.close();
-    await _messageController.close();
+    await _statusController?.close();
+    await _messageController?.close();
+    _sendConnectedStatus(false);
   }
 
   void _updateStatus(String status) {
     if (!_isClosed) {
       print("WebSocket status updated: $status");
-      _statusController.add(status);
+      _statusController!.add(status);
     }
-  }
-
-  void retryConnection() async {
-    if (_isClosed) {
-      print("Cannot retry connection: WebSocketService is closed");
-      return;
-    }
-    await _closeChannel();
-    await connect();
   }
 
   Future<void> register(
