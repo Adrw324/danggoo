@@ -49,23 +49,25 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   List<int> buttonCounts = [];
   DateTime gameStartTime = DateTime.now();
   bool colorChanged = false;
-  bool isAnyButtonOn = false;
-  late StreamSubscription _messageSubscription;
 
-  List<bool> isPressed = [false, false, false, false, false, false];
+  late StreamSubscription _messageSubscription;
+  // bool isAnyButtonOn = false;
+  // List<bool> isPressed = [false, false, false, false, false, false];
 
   late VideoManager videoManager;
 
   bool _isLoading = true;
 
+  bool isPlayingStartSound = false;
+
   Soundpool pool = Soundpool(streamType: StreamType.notification);
-  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 10;
     double scoreBtnFontSize = screenHeight / 14;
-    double PlaytimeFontSize = screenHeight / 8;
+    double PlaytimeFontSize = screenHeight / 10;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,8 +98,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       body: GestureDetector(
         onTap: () {
           setState(() {
-            turnOffAll();
-            isAnyButtonOn = false;
+            // turnOffAll();
+            // isAnyButtonOn = false;
           });
         },
         child: Row(
@@ -138,7 +140,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
               ),
             ),
             Expanded(
-              flex: 4,
+              flex: 7,
               child: Container(
                 decoration: BoxDecoration(
                     // border: Border.all(color: Colors.black),
@@ -147,7 +149,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   child: Column(
                     children: [
                       Expanded(
-                        flex: 7,
+                        flex: 10,
                         child: Scaffold(
                           appBar: null,
                           body: Column(
@@ -259,17 +261,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                               child: Text(
                                 'Reset',
                                 style:
-                                    TextStyle(color: Colors.teal, fontSize: 25),
+                                    TextStyle(color: Colors.teal, fontSize: 20),
                               ),
                             ),
                           ],
                         ),
                       ),
                       Expanded(
-                        flex: 7,
+                        flex: 3,
                         child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               Text(
                                 formattedTime,
@@ -280,41 +282,49 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   if (!isGameStarted)
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            Color.fromRGBO(37, 37, 38, 0.973),
-                                      ),
-                                      onPressed: () => startGame(
-                                          Provider.of<GameData>(context,
-                                              listen: false)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(15.0),
-                                        child: Container(
-                                            child: Center(
-                                                child: Text('START',
-                                                    style: TextStyle(
-                                                        fontSize: 50,
-                                                        color: Colors.white)))),
+                                    Padding(
+                                      padding: const EdgeInsets.all(25.0),
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Color.fromRGBO(37, 37, 38, 0.973),
+                                        ),
+                                        onPressed: () => startGame(
+                                            Provider.of<GameData>(context,
+                                                listen: false)),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10),
+                                          child: Container(
+                                              child: Center(
+                                                  child: Text('START',
+                                                      style: TextStyle(
+                                                          fontSize: 45,
+                                                          color:
+                                                              Colors.white)))),
+                                        ),
                                       ),
                                     ),
                                   if (isGameStarted)
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                      onPressed: () => finishGame((Provider.of<
-                                              GameData>(context,
-                                          listen:
-                                              false))), // Finish 버튼 클릭 시 데이터 전송
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(15.0),
-                                        child: Container(
-                                            child: Center(
-                                                child: Text('FINISH',
-                                                    style: TextStyle(
-                                                        fontSize: 50,
-                                                        color: Colors.white)))),
+                                    Padding(
+                                      padding: const EdgeInsets.all(25.0),
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                        onPressed: () => finishGame((Provider.of<
+                                                GameData>(context,
+                                            listen:
+                                                false))), // Finish 버튼 클릭 시 데이터 전송
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Container(
+                                              child: Center(
+                                                  child: Text('FINISH',
+                                                      style: TextStyle(
+                                                          fontSize: 50,
+                                                          color:
+                                                              Colors.white)))),
+                                        ),
                                       ),
                                     ),
                                   if (widget.playerCount % 2 == 0)
@@ -502,6 +512,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         await rootBundle.load("assets/fanfare.mp3").then((ByteData soundData) {
       return pool.load(soundData);
     });
+    soundId[11] =
+        await rootBundle.load("assets/start.mp3").then((ByteData soundData) {
+      return pool.load(soundData);
+    });
   }
 
   @override
@@ -515,6 +529,21 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     print('Disposed!');
 
     super.dispose();
+  }
+
+  Future<void> _startGameIfNotStarted(GameData gameData) async {
+    if (!isGameStarted) {
+      setState(() {
+        isGameStarted = true;
+        isPlayingStartSound = true;
+      });
+      await pool.play(soundId[11]);
+      setState(() {
+        isPlayingStartSound = false;
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+      _startGameConfirmed(gameData);
+    }
   }
 
   void startGame(GameData gameData) {
@@ -549,7 +578,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     );
   }
 
-  void _startGameConfirmed(GameData gameData) {
+  void _startGameConfirmed(GameData gameData) async {
     DateTime today = DateTime.now();
     gameStartTime = DateTime.now();
     int table = gameData.tabletNumber;
@@ -562,6 +591,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
       fee: 0,
       finished: false,
     );
+
+    await pool.play(soundId[11]);
 
     startTimer();
     // widget.webSocketService.sendMessage({
@@ -690,40 +721,44 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   }
 
   Future<void> incrementButtonCountBy(int index, int count) async {
+    await _startGameIfNotStarted(Provider.of<GameData>(context, listen: false));
     setState(() {
       buttonCounts[index] += count;
     });
 
-    switch (count) {
-      case 1:
-        await pool.play(soundId[7]); // onep.mp3
-        break;
-      case 2:
-        await pool.play(soundId[8]); // twop.mp3
-        break;
-      case 3:
-        await pool.play(soundId[9]); // threep.mp3
-        break;
-      case 5:
-        await pool.play(soundId[10]); // fanfare.mp3
-        break;
+    if (!isPlayingStartSound) {
+      switch (count) {
+        case 1:
+          await pool.play(soundId[7]); // onep.mp3
+          break;
+        case 2:
+          await pool.play(soundId[8]); // twop.mp3
+          break;
+        case 3:
+          await pool.play(soundId[9]); // threep.mp3
+          break;
+        case 5:
+          await pool.play(soundId[10]); // fanfare.mp3
+          break;
+      }
     }
   }
 
   Future<void> decrementButtonCount(int index) async {
+    _startGameIfNotStarted(Provider.of<GameData>(context, listen: false));
     setState(() {
       buttonCounts[index]--;
     });
   }
 
-  void turnOffAll() {
-    isPressed[0] = false;
-    isPressed[1] = false;
-    isPressed[2] = false;
-    isPressed[3] = false;
-    isPressed[4] = false;
-    isPressed[5] = false;
-  }
+  // void turnOffAll() {
+  //   isPressed[0] = false;
+  //   isPressed[1] = false;
+  //   isPressed[2] = false;
+  //   isPressed[3] = false;
+  //   isPressed[4] = false;
+  //   isPressed[5] = false;
+  // }
 
   void _showResetConfirmationDialog() {
     showDialog(
@@ -804,10 +839,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
     double scoreFontSize = screenHeight / 15;
     double scoreBtnFontSize = screenHeight / 55;
-    double playerFontSize = screenHeight / 55;
+    double playerFontSize = screenHeight / 40;
     return Center(
       child: AspectRatio(
-        aspectRatio: 1.4,
+        aspectRatio: 1,
         child: Container(
           margin: const EdgeInsets.only(left: 10.0, right: 10.0),
           height: MediaQuery.of(context).size.height / 5,
@@ -815,7 +850,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(10),
-            color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
+            // color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -824,153 +859,25 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             child: Column(
               children: [
                 Expanded(
-                  flex: 4,
-                  child: Row(
+                  flex: 5,
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        flex: 1,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.all(1.0),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            incrementButtonCountBy(index, 2);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
-                                    },
-                                    child: Text(
-                                      '+2',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                            // borderRadius:
-                                            // BorderRadius.circular(5.0),
-                                            ),
-                                        backgroundColor:
-                                            Color.fromARGB(1, 2, 52, 161)
-                                        // side: BorderSide(
-                                        // width: 1.0, color: Colors.blue)
-                                        ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.all(1.0),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            incrementButtonCountBy(index, 3);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
-                                    },
-                                    child: Text(
-                                      '+3',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(1.0),
-                                      ),
-                                      backgroundColor:
-                                          Color.fromARGB(1, 2, 52, 161),
-                                      // side: BorderSide(
-                                      // width: 1.0, color: Colors.blue)
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
+                        flex: 6,
                         child: Container(
                           child: AspectRatio(
-                              aspectRatio: 0.7,
+                              aspectRatio: 2.1,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  if (isAnyButtonOn) {
-                                    if (isPressed[index]) {
-                                      setState(() {
-                                        incrementButtonCountBy(index, 1);
-                                        checkWinner(
-                                            buttonCounts[index],
-                                            handicabScores[index],
-                                            index,
-                                            isHandicap);
-                                      });
-                                    } else {
-                                      setState(() {
-                                        turnOffAll();
-                                        isAnyButtonOn = false;
-                                      });
-                                    }
-                                  } else {
-                                    setState(() {
-                                      turnOffAll();
-                                      isPressed[index] = true;
-                                      isAnyButtonOn = true;
-                                    });
-                                  }
+                                  setState(() {
+                                    incrementButtonCountBy(index, 1);
+                                    checkWinner(
+                                        buttonCounts[index],
+                                        handicabScores[index],
+                                        index,
+                                        isHandicap);
+                                  });
                                 },
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -985,16 +892,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               fontSize: playerFontSize,
                                               color: Colors.black),
                                         ),
-                                        if (isHandicap)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 3.0),
-                                            child: Text(
-                                              '${handicabScores[index]}',
-                                              style:
-                                                  TextStyle(color: Colors.red),
-                                            ),
-                                          ),
                                       ],
                                     ),
                                     Text(
@@ -1003,6 +900,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           fontSize: scoreFontSize,
                                           color: Colors.black),
                                     ),
+                                    if (isHandicap)
+                                      Padding(
+                                        padding: const EdgeInsets.all(0),
+                                        child: Text(
+                                          '${handicabScores[index]}',
+                                          style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: playerFontSize),
+                                        ),
+                                      ),
                                   ],
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -1019,26 +926,106 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         return colors[index % 2];
                                     }
                                   }(),
-                                  // side: BorderSide(
-                                  // width: 3.0, color: Colors.white)
                                 ),
                               )),
                         ),
                       ),
                       Expanded(
-                        flex: 1,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.all(1.0),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
+                          flex: 2,
+                          child: Container(
+                            color: Color.fromRGBO(37, 37, 38, 0.973),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(1),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            incrementButtonCountBy(index, 2);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
+                                          });
+                                        },
+                                        child: FittedBox(
+                                          fit: BoxFit.contain,
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(
+                                              '+2',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: scoreBtnFontSize,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(),
+                                          backgroundColor:
+                                              Color.fromARGB(1, 2, 52, 161),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(1.0),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            incrementButtonCountBy(index, 3);
+                                            checkWinner(
+                                                buttonCounts[index],
+                                                handicabScores[index],
+                                                index,
+                                                isHandicap);
+                                          });
+                                        },
+                                        child: FittedBox(
+                                          fit: BoxFit.contain,
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(
+                                              '+3',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: scoreBtnFontSize,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(),
+                                          backgroundColor:
+                                              Color.fromARGB(1, 2, 52, 161),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(1.0),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: ElevatedButton(
+                                        onPressed: () {
                                           setState(() {
                                             incrementButtonCountBy(index, 5);
                                             checkWinner(
@@ -1047,51 +1034,39 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                 index,
                                                 isHandicap);
                                           });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
-                                    },
-                                    child: Text(
-                                      '+5',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                            // borderRadius:
-                                            //     BorderRadius.circular(5.0),
+                                        },
+                                        child: FittedBox(
+                                          fit: BoxFit.contain,
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(
+                                              '+5',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: scoreBtnFontSize,
+                                              ),
                                             ),
-                                        backgroundColor:
-                                            Color.fromARGB(1, 2, 52, 161)
-                                        // side: BorderSide(
-                                        // width: 1.0, color: Colors.blue)
+                                          ),
                                         ),
+                                        style: ElevatedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(),
+                                          backgroundColor:
+                                              Color.fromARGB(1, 2, 52, 161),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.all(3.0),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(1.0),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: ElevatedButton(
+                                        onPressed: () {
                                           setState(() {
                                             decrementButtonCount(index);
                                             checkWinner(
@@ -1100,44 +1075,33 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                 index,
                                                 isHandicap);
                                           });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
-                                    },
-                                    child: Text(
-                                      '-1',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                          // borderRadius:
-                                          //     BorderRadius.circular(5.0),
+                                        },
+                                        child: FittedBox(
+                                          fit: BoxFit.contain,
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(
+                                              '-1',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: scoreBtnFontSize,
+                                              ),
+                                            ),
                                           ),
-                                      backgroundColor:
-                                          Color.fromARGB(222, 255, 132, 0),
-                                      // side: BorderSide(
-                                      // width: 1.0, color: Colors.blue)
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(),
+                                          backgroundColor: Colors.red,
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ))
                     ],
                   ),
                 ),
@@ -1203,12 +1167,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     return Center(
       child: AspectRatio(
-        aspectRatio: 1.08,
+        aspectRatio: 0.67,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(10),
-            color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
+            // color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
@@ -1242,29 +1206,14 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 aspectRatio: 2.1,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    if (isAnyButtonOn) {
-                                      if (isPressed[index]) {
-                                        setState(() {
-                                          incrementButtonCountBy(index, 1);
-                                          checkWinner(
-                                              buttonCounts[index],
-                                              handicabScores[index],
-                                              index,
-                                              isHandicap);
-                                        });
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isAnyButtonOn = false;
-                                        });
-                                      }
-                                    } else {
-                                      setState(() {
-                                        turnOffAll();
-                                        isPressed[index] = true;
-                                        isAnyButtonOn = true;
-                                      });
-                                    }
+                                    setState(() {
+                                      incrementButtonCountBy(index, 1);
+                                      checkWinner(
+                                          buttonCounts[index],
+                                          handicabScores[index],
+                                          index,
+                                          isHandicap);
+                                    });
                                   },
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1279,16 +1228,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                                 fontSize: playerFontSize,
                                                 color: Colors.black),
                                           ),
-                                          if (isHandicap)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8.0),
-                                              child: Text(
-                                                '${handicabScores[index]}',
-                                                style: TextStyle(
-                                                    color: Colors.red),
-                                              ),
-                                            ),
                                         ],
                                       ),
                                       Text(
@@ -1297,6 +1236,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                             fontSize: scoreFontSize,
                                             color: Colors.black),
                                       ),
+                                      if (isHandicap)
+                                        Padding(
+                                          padding: const EdgeInsets.all(0),
+                                          child: Text(
+                                            '${handicabScores[index]}',
+                                            style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: playerFontSize),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                   style: ElevatedButton.styleFrom(
@@ -1327,106 +1276,39 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   Expanded(
                                     flex: 1,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(1.0),
+                                      padding: const EdgeInsets.all(1),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            if (isAnyButtonOn) {
-                                              if (isPressed[index]) {
-                                                setState(() {
-                                                  incrementButtonCountBy(
-                                                      index, 2);
-                                                  checkWinner(
-                                                      buttonCounts[index],
-                                                      handicabScores[index],
-                                                      index,
-                                                      isHandicap);
-                                                });
-                                              } else {
-                                                setState(() {
-                                                  turnOffAll();
-                                                  isAnyButtonOn = false;
-                                                });
-                                              }
-                                            } else {
-                                              setState(() {
-                                                turnOffAll();
-                                                isPressed[index] = true;
-                                                isAnyButtonOn = true;
-                                              });
-                                            }
+                                            setState(() {
+                                              incrementButtonCountBy(index, 2);
+                                              checkWinner(
+                                                  buttonCounts[index],
+                                                  handicabScores[index],
+                                                  index,
+                                                  isHandicap);
+                                            });
                                           },
-                                          child: Text(
-                                            '+2',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: scoreBtnFontSize),
-                                            softWrap: false,
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                              shape: RoundedRectangleBorder(
-                                                  // borderRadius:
-                                                  //     BorderRadius.circular(5.0),
-                                                  ),
-                                              backgroundColor:
-                                                  Color.fromARGB(1, 2, 52, 161)
-                                              // side: BorderSide(
-                                              // width: 1.0, color: Colors.blue)
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(1.0),
-                                      child: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            if (isAnyButtonOn) {
-                                              if (isPressed[index]) {
-                                                setState(() {
-                                                  incrementButtonCountBy(
-                                                      index, 3);
-                                                  checkWinner(
-                                                      buttonCounts[index],
-                                                      handicabScores[index],
-                                                      index,
-                                                      isHandicap);
-                                                });
-                                              } else {
-                                                setState(() {
-                                                  turnOffAll();
-                                                  isAnyButtonOn = false;
-                                                });
-                                              }
-                                            } else {
-                                              setState(() {
-                                                turnOffAll();
-                                                isPressed[index] = true;
-                                                isAnyButtonOn = true;
-                                              });
-                                            }
-                                          },
-                                          child: Text(
-                                            '+3',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: scoreBtnFontSize),
-                                            softWrap: false,
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            shape: RoundedRectangleBorder(
-                                                // borderRadius:
-                                                //     BorderRadius.circular(5.0),
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              child: Text(
+                                                '+2',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: scoreBtnFontSize,
                                                 ),
+                                              ),
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(),
                                             backgroundColor:
                                                 Color.fromARGB(1, 2, 52, 161),
-                                            // side: BorderSide(
-                                            // width: 1.0, color: Colors.blue)
+                                            padding: EdgeInsets.zero,
                                           ),
                                         ),
                                       ),
@@ -1440,49 +1322,35 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         aspectRatio: 1,
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            if (isAnyButtonOn) {
-                                              if (isPressed[index]) {
-                                                setState(() {
-                                                  incrementButtonCountBy(
-                                                      index, 5);
-                                                  checkWinner(
-                                                      buttonCounts[index],
-                                                      handicabScores[index],
-                                                      index,
-                                                      isHandicap);
-                                                });
-                                              } else {
-                                                setState(() {
-                                                  turnOffAll();
-                                                  isAnyButtonOn = false;
-                                                });
-                                              }
-                                            } else {
-                                              setState(() {
-                                                turnOffAll();
-                                                isPressed[index] = true;
-                                                isAnyButtonOn = true;
-                                              });
-                                            }
+                                            setState(() {
+                                              incrementButtonCountBy(index, 3);
+                                              checkWinner(
+                                                  buttonCounts[index],
+                                                  handicabScores[index],
+                                                  index,
+                                                  isHandicap);
+                                            });
                                           },
-                                          child: Text(
-                                            '+5',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: scoreBtnFontSize,
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              child: Text(
+                                                '+3',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: scoreBtnFontSize,
+                                                ),
+                                              ),
                                             ),
-                                            softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
-                                              shape: RoundedRectangleBorder(
-                                                  // borderRadius:
-                                                  //     BorderRadius.circular(5.0),
-                                                  ),
-                                              backgroundColor:
-                                                  Color.fromARGB(1, 2, 52, 161)
-                                              // side: BorderSide(
-                                              // width: 1.0, color: Colors.blue)
-                                              ),
+                                            shape: RoundedRectangleBorder(),
+                                            backgroundColor:
+                                                Color.fromARGB(1, 2, 52, 161),
+                                            padding: EdgeInsets.zero,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1490,51 +1358,79 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   Expanded(
                                     flex: 1,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(3.0),
+                                      padding: const EdgeInsets.all(1.0),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            if (isAnyButtonOn) {
-                                              if (isPressed[index]) {
-                                                setState(() {
-                                                  decrementButtonCount(index);
-                                                  checkWinner(
-                                                      buttonCounts[index],
-                                                      handicabScores[index],
-                                                      index,
-                                                      isHandicap);
-                                                });
-                                              } else {
-                                                setState(() {
-                                                  turnOffAll();
-                                                  isAnyButtonOn = false;
-                                                });
-                                              }
-                                            } else {
-                                              setState(() {
-                                                turnOffAll();
-                                                isPressed[index] = true;
-                                                isAnyButtonOn = true;
-                                              });
-                                            }
+                                            setState(() {
+                                              incrementButtonCountBy(index, 5);
+                                              checkWinner(
+                                                  buttonCounts[index],
+                                                  handicabScores[index],
+                                                  index,
+                                                  isHandicap);
+                                            });
                                           },
-                                          child: Text(
-                                            '-1',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: scoreBtnFontSize,
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              child: Text(
+                                                '+5',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: scoreBtnFontSize,
+                                                ),
+                                              ),
                                             ),
-                                            softWrap: false,
                                           ),
                                           style: ElevatedButton.styleFrom(
-                                            shape: RoundedRectangleBorder(
-                                                // borderRadius:
-                                                //     BorderRadius.circular(5.0),
+                                            shape: RoundedRectangleBorder(),
+                                            backgroundColor:
+                                                Color.fromARGB(1, 2, 52, 161),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(1.0),
+                                      child: AspectRatio(
+                                        aspectRatio: 1,
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              decrementButtonCount(index);
+                                              checkWinner(
+                                                  buttonCounts[index],
+                                                  handicabScores[index],
+                                                  index,
+                                                  isHandicap);
+                                            });
+                                          },
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              child: Text(
+                                                '-1',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: scoreBtnFontSize,
                                                 ),
+                                              ),
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(),
                                             backgroundColor: Colors.red,
-                                            // side: BorderSide(
-                                            // width: 1.0, color: Colors.blue)
+                                            padding: EdgeInsets.zero,
                                           ),
                                         ),
                                       ),
@@ -1596,15 +1492,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
 
     double screenHeight = MediaQuery.of(context).size.height;
-    double scoreFontSize = screenHeight / 6;
+    double scoreFontSize = screenHeight / 8;
     double scoreBtnFontSize = screenHeight / 20;
-    double playerFontSize = screenHeight / 30;
+    double playerFontSize = screenHeight / 25;
     double handicapFontSize = screenHeight / 40;
     double buttonSize = screenHeight / 4.5;
 
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.53,
+        aspectRatio: 0.35,
         child: Container(
           margin: const EdgeInsets.only(left: 10.0, right: 10.0),
           height: MediaQuery.of(context).size.height / 2,
@@ -1612,7 +1508,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(10),
-            color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
+            // color: isPressed[index] ? Colors.lightBlue : Colors.transparent,
           ),
           child: Column(
             children: [
@@ -1623,26 +1519,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                   height: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      if (isAnyButtonOn) {
-                        if (isPressed[index]) {
-                          setState(() {
-                            incrementButtonCountBy(index, 1);
-                            checkWinner(buttonCounts[index],
-                                handicabScores[index], index, isHandicap);
-                          });
-                        } else {
-                          setState(() {
-                            turnOffAll();
-                            isAnyButtonOn = false;
-                          });
-                        }
-                      } else {
-                        setState(() {
-                          turnOffAll();
-                          isPressed[index] = true;
-                          isAnyButtonOn = true;
-                        });
-                      }
+                      setState(() {
+                        incrementButtonCountBy(index, 1);
+                        checkWinner(buttonCounts[index], handicabScores[index],
+                            index, isHandicap);
+                      });
                     },
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1656,16 +1537,6 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   fontSize: playerFontSize,
                                   color: Colors.black),
                             ),
-                            if (isHandicap)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: Text(
-                                  '${handicabScores[index]}',
-                                  style: TextStyle(
-                                      fontSize: handicapFontSize,
-                                      color: Colors.red),
-                                ),
-                              ),
                           ],
                         ),
                         Text(
@@ -1673,6 +1544,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           style: TextStyle(
                               fontSize: scoreFontSize, color: Colors.black),
                         ),
+                        if (isHandicap)
+                          Padding(
+                            padding: const EdgeInsets.all(0),
+                            child: Text(
+                              '${handicabScores[index]}',
+                              style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: playerFontSize,
+                                  fontWeight: FontWeight.w900),
+                            ),
+                          ),
                       ],
                     ),
                     style: ElevatedButton.styleFrom(
@@ -1708,44 +1590,34 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   aspectRatio: 1,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            incrementButtonCountBy(index, 2);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
+                                      setState(() {
+                                        incrementButtonCountBy(index, 2);
+                                        checkWinner(
+                                            buttonCounts[index],
+                                            handicabScores[index],
+                                            index,
+                                            isHandicap);
+                                      });
                                     },
-                                    child: Text(
-                                      '+2',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
+                                    child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: Container(
+                                        padding: EdgeInsets.all(2),
+                                        child: Text(
+                                          '+2',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: scoreBtnFontSize,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(5.0),
-                                      ),
+                                      shape: RoundedRectangleBorder(),
                                       backgroundColor:
                                           Color.fromARGB(1, 2, 52, 161),
+                                      padding: EdgeInsets.zero,
                                     ),
                                   ),
                                 ),
@@ -1759,44 +1631,34 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   aspectRatio: 1,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            incrementButtonCountBy(index, 3);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
+                                      setState(() {
+                                        incrementButtonCountBy(index, 3);
+                                        checkWinner(
+                                            buttonCounts[index],
+                                            handicabScores[index],
+                                            index,
+                                            isHandicap);
+                                      });
                                     },
-                                    child: Text(
-                                      '+3',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
+                                    child: FittedBox(
+                                      fit: BoxFit.contain,
+                                      child: Container(
+                                        padding: EdgeInsets.all(2),
+                                        child: Text(
+                                          '+3',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: scoreBtnFontSize,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(5.0),
-                                      ),
+                                      shape: RoundedRectangleBorder(),
                                       backgroundColor:
                                           Color.fromARGB(1, 2, 52, 161),
+                                      padding: EdgeInsets.zero,
                                     ),
                                   ),
                                 ),
@@ -1816,44 +1678,34 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   aspectRatio: 1,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            incrementButtonCountBy(index, 5);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
+                                      setState(() {
+                                        incrementButtonCountBy(index, 5);
+                                        checkWinner(
+                                            buttonCounts[index],
+                                            handicabScores[index],
+                                            index,
+                                            isHandicap);
+                                      });
                                     },
-                                    child: Text(
-                                      '+5',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
+                                    child: FittedBox(
+                                      fit: BoxFit.contain,
+                                      child: Container(
+                                        padding: EdgeInsets.all(2),
+                                        child: Text(
+                                          '+5',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: scoreBtnFontSize,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(5.0),
-                                      ),
+                                      shape: RoundedRectangleBorder(),
                                       backgroundColor:
                                           Color.fromARGB(1, 2, 52, 161),
+                                      padding: EdgeInsets.zero,
                                     ),
                                   ),
                                 ),
@@ -1867,43 +1719,33 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                   aspectRatio: 1,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      if (isAnyButtonOn) {
-                                        if (isPressed[index]) {
-                                          setState(() {
-                                            decrementButtonCount(index);
-                                            checkWinner(
-                                                buttonCounts[index],
-                                                handicabScores[index],
-                                                index,
-                                                isHandicap);
-                                          });
-                                        } else {
-                                          setState(() {
-                                            turnOffAll();
-                                            isAnyButtonOn = false;
-                                          });
-                                        }
-                                      } else {
-                                        setState(() {
-                                          turnOffAll();
-                                          isPressed[index] = true;
-                                          isAnyButtonOn = true;
-                                        });
-                                      }
+                                      setState(() {
+                                        decrementButtonCount(index);
+                                        checkWinner(
+                                            buttonCounts[index],
+                                            handicabScores[index],
+                                            index,
+                                            isHandicap);
+                                      });
                                     },
-                                    child: Text(
-                                      '-1',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: scoreBtnFontSize),
-                                      softWrap: false,
+                                    child: FittedBox(
+                                      fit: BoxFit.contain,
+                                      child: Container(
+                                        padding: EdgeInsets.all(2),
+                                        child: Text(
+                                          '-1',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: scoreBtnFontSize,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(5.0),
-                                      ),
+                                      shape: RoundedRectangleBorder(),
                                       backgroundColor: Colors.red,
+                                      padding: EdgeInsets.zero,
                                     ),
                                   ),
                                 ),

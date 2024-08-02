@@ -356,111 +356,137 @@ class _TabletHomePageState extends State<TabletHomePage> {
 
   Future<void> _showHandicabDialog(
       BuildContext context, int playerCount) async {
-    List<int> handicabScores = List.filled(playerCount, 10);
+    List<int?> handicapScores = List.filled(playerCount, null);
+    List<TextEditingController> controllers = List.generate(
+      playerCount,
+      (index) => TextEditingController(),
+    );
 
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            List<TextEditingController> controllers = List.generate(
-              playerCount,
-              (index) => TextEditingController(text: ''),
-            );
-
             return AlertDialog(
-              title: Text('HANDICAP'),
-              content: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.5,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(playerCount, (index) {
-                      return ListTile(
-                        title: Text('PLAYER ${index + 1}'),
-                        contentPadding: EdgeInsets.all(0),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: SizedBox(
-                                width: 100,
-                                child: TextField(
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  textAlignVertical: TextAlignVertical.center,
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.all(10.0),
+              title: Text('HANDICAP', style: TextStyle(fontSize: 28)),
+              content: Container(
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.8,
+                child: Center(
+                  // 추가된 Center 위젯
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height *
+                                0.2), // 상단 여백 추가
+                        ...List.generate(playerCount, (index) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 150,
+                                  child: Text('PLAYER ${index + 1}',
+                                      style: TextStyle(fontSize: 22)),
+                                ),
+                                SizedBox(width: 30),
+                                SizedBox(
+                                  width: 150,
+                                  child: TextField(
+                                    controller: controllers[index],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 20),
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.all(16.0),
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        handicapScores[index] =
+                                            int.tryParse(value);
+                                      });
+                                    },
                                   ),
-                                  onChanged: (value) {
-                                    handicabScores[index] =
-                                        int.tryParse(value) ?? 0;
-                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        SizedBox(height: 30),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _navigateToQuickStart(
+                                  context, playerCount, handicapScores, true),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 30, vertical: 15),
+                                child: Text('START',
+                                    style: TextStyle(fontSize: 24)),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 30, vertical: 15),
+                                child: Text('CANCEL',
+                                    style: TextStyle(fontSize: 24)),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height *
+                                0.2), // 하단 여백 추가
+                      ],
+                    ),
                   ),
                 ),
               ),
-              actions: [
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QuickStartScreen(
-                              playerCount: playerCount,
-                              handicabScores: handicabScores,
-                              isHandicap: false,
-                              webSocketService: _webSocketService,
-                            ),
-                          ),
-                        );
-                      },
-                      child:
-                          Text('SKIP', style: TextStyle(color: Colors.orange)),
-                    ),
-                    Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QuickStartScreen(
-                              playerCount: playerCount,
-                              handicabScores: handicabScores,
-                              isHandicap: true,
-                              webSocketService: _webSocketService,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text('SAVE', style: TextStyle(color: Colors.blue)),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child:
-                          Text('CANCEL', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ],
             );
           },
         );
       },
+    );
+  }
+
+  void _navigateToQuickStart(BuildContext context, int playerCount,
+      List<int?> handicapScores, bool isHandicap) {
+    bool allHandicapsEntered = handicapScores.every((score) => score != null);
+    List<int> finalHandicapScores =
+        handicapScores.map((score) => score ?? 0).toList();
+
+    Navigator.of(context).pop();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuickStartScreen(
+          playerCount: playerCount,
+          handicabScores: finalHandicapScores,
+          isHandicap: isHandicap && allHandicapsEntered,
+          webSocketService: _webSocketService,
+        ),
+      ),
     );
   }
 }
