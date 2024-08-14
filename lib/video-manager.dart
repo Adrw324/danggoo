@@ -255,9 +255,97 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                   duration: Duration(milliseconds: 300),
                   child: Stack(
                     children: [
+                      // 풀스크린 버튼
+                      if (_showControls && !widget.isFullscreen)
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: IconButton(
+                            icon: Icon(Icons.fullscreen, color: Colors.white),
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FullscreenVideoPage(
+                                      controller: widget.controller),
+                                ),
+                              );
+                              if (mounted) {
+                                setState(() {
+                                  _showControls = true;
+                                });
+                                _startHideTimer();
+                              }
+                            },
+                          ),
+                        ),
+                      // 컨트롤 버튼들
                       if (_showControls)
                         Positioned(
-                          bottom: 40,
+                          bottom: 60, // 아래쪽 패딩 조정
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.replay_5, color: Colors.white),
+                                onPressed: () {
+                                  final newPosition =
+                                      widget.controller.player.state.position -
+                                          Duration(seconds: 5);
+                                  widget.controller.player.seek(newPosition);
+                                  _startHideTimer();
+                                },
+                              ),
+                              StreamBuilder<bool>(
+                                stream: widget.controller.player.stream.playing,
+                                initialData:
+                                    widget.controller.player.state.playing,
+                                builder: (context, snapshot) {
+                                  final playing = snapshot.data ?? false;
+                                  return IconButton(
+                                    icon: Icon(
+                                      playing ? Icons.pause : Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 48,
+                                    ),
+                                    onPressed: () {
+                                      if (playing) {
+                                        widget.controller.player.pause();
+                                      } else {
+                                        widget.controller.player.play();
+                                      }
+                                      _startHideTimer();
+                                    },
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    Icon(Icons.forward_5, color: Colors.white),
+                                onPressed: () {
+                                  final newPosition =
+                                      widget.controller.player.state.position +
+                                          Duration(seconds: 5);
+                                  widget.controller.player.seek(newPosition);
+                                  _startHideTimer();
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.update, color: Colors.white),
+                                onPressed: () {
+                                  _seekToLatestSegment();
+                                  _startHideTimer();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      // 슬라이더바
+                      if (_showControls)
+                        Positioned(
+                          bottom: 10, // 아래쪽 패딩 조정
                           left: 16,
                           right: 16,
                           child: Column(
@@ -315,104 +403,6 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      if (_showControls)
-                        Positioned(
-                          bottom: 100,
-                          left: 16,
-                          right: 16,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              SizedBox(width: 48), // 왼쪽 여백
-                              Expanded(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.replay_5,
-                                          color: Colors.white),
-                                      onPressed: () {
-                                        final newPosition = widget.controller
-                                                .player.state.position -
-                                            Duration(seconds: 5);
-                                        widget.controller.player
-                                            .seek(newPosition);
-                                        _startHideTimer();
-                                      },
-                                    ),
-                                    StreamBuilder<bool>(
-                                      stream: widget
-                                          .controller.player.stream.playing,
-                                      builder: (context, snapshot) {
-                                        final playing = snapshot.data ?? false;
-                                        return IconButton(
-                                          icon: Icon(
-                                            playing
-                                                ? Icons.pause
-                                                : Icons.play_arrow,
-                                            color: Colors.white,
-                                            size: 48,
-                                          ),
-                                          onPressed: () {
-                                            if (playing) {
-                                              widget.controller.player.pause();
-                                            } else {
-                                              widget.controller.player.play();
-                                            }
-                                            _startHideTimer();
-                                          },
-                                        );
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.forward_5,
-                                          color: Colors.white),
-                                      onPressed: () {
-                                        final newPosition = widget.controller
-                                                .player.state.position +
-                                            Duration(seconds: 5);
-                                        widget.controller.player
-                                            .seek(newPosition);
-                                        _startHideTimer();
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.update,
-                                          color: Colors.white),
-                                      onPressed: () {
-                                        _seekToLatestSegment();
-                                        _startHideTimer();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!widget.isFullscreen)
-                                IconButton(
-                                  icon: Icon(Icons.fullscreen,
-                                      color: Colors.white),
-                                  onPressed: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FullscreenVideoPage(
-                                                controller: widget.controller),
-                                      ),
-                                    );
-                                    if (mounted) {
-                                      setState(() {
-                                        _showControls = true;
-                                      });
-                                      _startHideTimer();
-                                    }
-                                  },
-                                )
-                              else
-                                SizedBox(width: 48), // 오른쪽 여백
                             ],
                           ),
                         ),
