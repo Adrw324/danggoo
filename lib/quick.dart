@@ -1500,7 +1500,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.35,
+        aspectRatio: 0.37,
         child: Container(
           margin: const EdgeInsets.only(left: 10.0, right: 10.0),
           height: MediaQuery.of(context).size.height / 2,
