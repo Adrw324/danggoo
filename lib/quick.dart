@@ -161,66 +161,18 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                       ? Center(
                                           child: CircularProgressIndicator(),
                                         )
-                                      : Stack(
-                                          children: [
-                                            AspectRatio(
-                                              aspectRatio: 16 / 9,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(8.0),
-                                                child: Video(
-                                                  controller:
-                                                      videoManager.controller,
-                                                  controls: (state) =>
-                                                      MaterialVideoControlsTheme(
-                                                    normal:
-                                                        const MaterialVideoControlsThemeData(
-                                                      volumeGesture: false,
-                                                      brightnessGesture: false,
-                                                      seekOnDoubleTap: true,
-                                                      bottomButtonBar: [
-                                                        MaterialPositionIndicator(),
-                                                        Spacer(),
-                                                      ],
-                                                    ),
-                                                    fullscreen:
-                                                        const MaterialVideoControlsThemeData(
-                                                      volumeGesture: false,
-                                                      brightnessGesture: false,
-                                                      seekOnDoubleTap: true,
-                                                      bottomButtonBar: [
-                                                        MaterialPositionIndicator(),
-                                                        Spacer(),
-                                                      ],
-                                                    ),
-                                                    child:
-                                                        MaterialVideoControls(
-                                                            state),
-                                                  ),
-                                                ),
-                                              ),
+                                      : AspectRatio(
+                                          aspectRatio: 16 / 9,
+                                          child: Stack(children: [
+                                            Video(
+                                              controller:
+                                                  videoManager.controller,
+                                              controls: NoVideoControls,
                                             ),
-                                            Positioned(
-                                              top: 10,
-                                              right: 10,
-                                              child: IconButton(
-                                                icon: Icon(Icons.fullscreen),
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          FullscreenVideoPage(
-                                                        controller: videoManager
-                                                            .controller,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
+                                            CustomVideoControls(
+                                                controller:
+                                                    videoManager.controller),
+                                          ]),
                                         ),
                                 ),
                               ),
@@ -228,45 +180,45 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           ),
                         ),
                       ),
-                      Expanded(
-                        flex: 1,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              onPressed: () async {
-                                await videoManager.player.seek(
-                                    videoManager.player.state.position -
-                                        Duration(seconds: 10));
-                              },
-                              child: Icon(Icons.replay_10,
-                                  size: 35, color: Colors.white),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                await videoManager.player.seek(
-                                    videoManager.player.state.position +
-                                        Duration(seconds: 10));
-                              },
-                              child: Icon(Icons.forward_10,
-                                  size: 35, color: Colors.white),
-                            ),
-                            // TextButton(
-                            //   onPressed: ,
-                            //   child: Icon(Icons.update,
-                            //       size: 35, color: Colors.white),
-                            // ),
-                            TextButton(
-                              onPressed: _showResetConfirmationDialog,
-                              child: Text(
-                                'Reset',
-                                style:
-                                    TextStyle(color: Colors.teal, fontSize: 20),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Expanded(
+                      //   flex: 1,
+                      //   child: Row(
+                      //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      //     children: [
+                      //       TextButton(
+                      //         onPressed: () async {
+                      //           await videoManager.player.seek(
+                      //               videoManager.player.state.position -
+                      //                   Duration(seconds: 10));
+                      //         },
+                      //         child: Icon(Icons.replay_10,
+                      //             size: 35, color: Colors.white),
+                      //       ),
+                      //       TextButton(
+                      //         onPressed: () async {
+                      //           await videoManager.player.seek(
+                      //               videoManager.player.state.position +
+                      //                   Duration(seconds: 10));
+                      //         },
+                      //         child: Icon(Icons.forward_10,
+                      //             size: 35, color: Colors.white),
+                      //       ),
+                      //       // TextButton(
+                      //       //   onPressed: ,
+                      //       //   child: Icon(Icons.update,
+                      //       //       size: 35, color: Colors.white),
+                      //       // ),
+                      //       TextButton(
+                      //         onPressed: _showResetConfirmationDialog,
+                      //         child: Text(
+                      //           'Reset',
+                      //           style:
+                      //               TextStyle(color: Colors.teal, fontSize: 20),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                       Expanded(
                         flex: 3,
                         child: Center(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'video-manager.dart';
 
 class FullscreenVideoPage extends StatefulWidget {
   final VideoController controller;
@@ -23,34 +24,15 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
           InteractiveViewer(
             transformationController: _transformationController,
             minScale: 1.0,
-            maxScale: 3.0,
+            maxScale: 4.0,
             child: Center(
               child: AspectRatio(
                 aspectRatio: 16 / 9, // 비디오의 실제 비율에 맞게 조정하세요
                 child: Video(
                   controller: widget.controller,
-                  controls: (state) => MaterialVideoControlsTheme(
-                    normal: MaterialVideoControlsThemeData(
-                      volumeGesture: false,
-                      brightnessGesture: false,
-                      seekOnDoubleTap: true,
-                      bottomButtonBar: const [
-                        MaterialPositionIndicator(),
-                        Spacer(),
-                        // MaterialFullscreenButton() 제거됨
-                      ],
-                    ),
-                    fullscreen: MaterialVideoControlsThemeData(
-                      volumeGesture: false,
-                      brightnessGesture: false,
-                      seekOnDoubleTap: true,
-                      bottomButtonBar: const [
-                        MaterialPositionIndicator(),
-                        Spacer(),
-                        // MaterialFullscreenButton() 제거됨
-                      ],
-                    ),
-                    child: MaterialVideoControls(state),
+                  controls: (state) => CustomVideoControls(
+                    controller: widget.controller,
+                    isFullscreen: true,
                   ),
                 ),
               ),
@@ -60,12 +42,11 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
             top: 20,
             right: 20,
             child: IconButton(
-              icon: Icon(Icons.fullscreen_exit),
+              icon: Icon(Icons.fullscreen_exit, color: Colors.white),
               onPressed: () {
                 _transformationController.value = Matrix4.identity();
                 Navigator.pop(context);
               },
-              color: Colors.white,
             ),
           ),
         ],
