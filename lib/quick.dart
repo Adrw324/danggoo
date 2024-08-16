@@ -220,6 +220,39 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       //   ),
                       // ),
                       Expanded(
+                        flex: 1,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            IconButton(
+                                onPressed: () async {
+                                  await videoManager.player.seek(
+                                      videoManager.player.state.position -
+                                          Duration(seconds: 1));
+                                },
+                                icon: Text("1 SEC SLOWER",
+                                    style: TextStyle(fontSize: 20))),
+                            IconButton(
+                              onPressed: () async {
+                                await videoManager.player.seek(
+                                    videoManager.player.state.position +
+                                        Duration(seconds: 1));
+                              },
+                              icon: Text("1 SEC FASTER",
+                                  style: TextStyle(fontSize: 20)),
+                            ),
+                            IconButton(
+                              onPressed: _reloadVideo,
+                              icon: Text(
+                                "RELOAD",
+                                style: TextStyle(
+                                    color: Colors.orange, fontSize: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
                         flex: 3,
                         child: Center(
                           child: Row(
@@ -416,6 +449,16 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         );
       }
     }
+  }
+
+  void _reloadVideo() async {
+    setState(() {
+      _isLoading = true;
+    });
+    _initializeVideo();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _settingButtonSound() async {

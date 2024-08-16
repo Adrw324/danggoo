@@ -1,28 +1,23 @@
-// video_manager.dart
-import 'dart:io';
-import 'package:danggoo/global.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:path_provider/path_provider.dart';
 import 'fullscreen.dart';
 import 'dart:async';
 
 class VideoManager {
   late final Player player;
   late final VideoController controller;
+  late String _currentPath;
 
   bool _isLoading = true;
 
   VideoManager() {
-    player = Player();
-    controller = VideoController(player);
-    // _ffmpeg = FlutterFFmpeg();
+    _initializePlayer();
   }
 
   Future<void> initialize(String inputPath) async {
-    await _initializeController(inputPath);
+    _currentPath = inputPath;
+    await _initializeController(_currentPath);
     _isLoading = false;
   }
 
@@ -46,6 +41,19 @@ class VideoManager {
 
   Future<void> dispose() async {
     player.dispose();
+  }
+
+  void _initializePlayer() {
+    player = Player();
+    controller = VideoController(player);
+  }
+
+  Future<void> reloadVideo() async {
+    _isLoading = true;
+    await dispose();
+    _initializePlayer();
+    await initialize(_currentPath);
+    _isLoading = false;
   }
 }
 
@@ -108,17 +116,27 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 
-  void _seekToLatestSegment() {
+  Future<void> _seekToLatestSegment() async {
     final duration = widget.controller.player.state.duration;
     if (duration > Duration.zero) {
-      final targetPosition = duration - Duration(seconds: 1);
+      final targetPosition = duration - Duration(seconds: 2);
+      await widget.controller.player.seek(targetPosition);
 
-      final currentPosition = widget.controller.player.state.position;
-
-      if (duration - currentPosition > Duration(seconds: 0)) {
-        widget.controller.player.seek(targetPosition);
+      if (!widget.controller.player.state.playing) {
+        await widget.controller.player.play();
       }
+
+      setState(() {});
     }
+  }
+
+  double _calculateSliderValue(Duration position, Duration duration) {
+    if (duration.inMilliseconds == 0) return 0.0;
+    return position.inMilliseconds / duration.inMilliseconds;
+  }
+
+  Duration _calculatePositionFromSliderValue(double value, Duration duration) {
+    return Duration(milliseconds: (value * duration.inMilliseconds).round());
   }
 
   @override
@@ -157,7 +175,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           right: 16,
                           child: IconButton(
                             icon: Icon(Icons.fullscreen,
-                                color: Colors.white, size: 36), // 크기를 1.5배로 증가
+                                color: Colors.white, size: 50), // 크기를 1.5배로 증가
                             onPressed: () async {
                               await Navigator.push(
                                 context,
@@ -181,69 +199,95 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           bottom: 60,
                           left: 0,
                           right: 0,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.replay_5,
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.replay_5,
+                                      color: Colors.white, size: 50),
+                                  onPressed: () {
+                                    final newPosition = widget
+                                            .controller.player.state.position -
+                                        Duration(seconds: 5);
+                                    widget.controller.player.seek(newPosition);
+                                    _startHideTimer();
+                                  },
+                                ),
+                                SizedBox(width: 20),
+                                StreamBuilder<bool>(
+                                  stream:
+                                      widget.controller.player.stream.playing,
+                                  initialData:
+                                      widget.controller.player.state.playing,
+                                  builder: (context, snapshot) {
+                                    final playing = snapshot.data ?? false;
+                                    return IconButton(
+                                      icon: Icon(
+                                        playing
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 100,
+                                      ),
+                                      onPressed: () {
+                                        if (playing) {
+                                          widget.controller.player.pause();
+                                        } else {
+                                          widget.controller.player.play();
+                                        }
+                                        _startHideTimer();
+                                      },
+                                    );
+                                  },
+                                ),
+                                SizedBox(width: 20),
+                                IconButton(
+                                  icon: Icon(Icons.forward_5,
+                                      color: Colors.white, size: 50),
+                                  onPressed: () {
+                                    final newPosition = widget
+                                            .controller.player.state.position +
+                                        Duration(seconds: 5);
+                                    widget.controller.player.seek(newPosition);
+                                    _startHideTimer();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      // LIVE 버튼 (별도 배치)
+                      if (_showControls)
+                        Positioned(
+                          bottom: 60,
+                          right: 16,
+                          child: IconButton(
+                            icon: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Go to",
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    size: 36), // 크기를 1.5배로 증가
-                                onPressed: () {
-                                  final newPosition =
-                                      widget.controller.player.state.position -
-                                          Duration(seconds: 5);
-                                  widget.controller.player.seek(newPosition);
-                                  _startHideTimer();
-                                },
-                              ),
-                              SizedBox(width: 20), // 간격 추가
-                              StreamBuilder<bool>(
-                                stream: widget.controller.player.stream.playing,
-                                initialData:
-                                    widget.controller.player.state.playing,
-                                builder: (context, snapshot) {
-                                  final playing = snapshot.data ?? false;
-                                  return IconButton(
-                                    icon: Icon(
-                                      playing ? Icons.pause : Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 72, // 크기를 1.5배로 증가 (48 * 1.5 = 72)
-                                    ),
-                                    onPressed: () {
-                                      if (playing) {
-                                        widget.controller.player.pause();
-                                      } else {
-                                        widget.controller.player.play();
-                                      }
-                                      _startHideTimer();
-                                    },
-                                  );
-                                },
-                              ),
-                              SizedBox(width: 20), // 간격 추가
-                              IconButton(
-                                icon: Icon(Icons.forward_5,
+                                    fontSize: 20,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                Text(
+                                  "Latest",
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    size: 36), // 크기를 1.5배로 증가
-                                onPressed: () {
-                                  final newPosition =
-                                      widget.controller.player.state.position +
-                                          Duration(seconds: 5);
-                                  widget.controller.player.seek(newPosition);
-                                  _startHideTimer();
-                                },
-                              ),
-                              SizedBox(width: 20), // 간격 추가
-                              IconButton(
-                                icon: Icon(Icons.update,
-                                    color: Colors.white,
-                                    size: 36), // 크기를 1.5배로 증가
-                                onPressed: () {
-                                  _seekToLatestSegment();
-                                  _startHideTimer();
-                                },
-                              ),
-                            ],
+                                    fontSize: 20,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onPressed: () {
+                              _seekToLatestSegment();
+                              _startHideTimer();
+                            },
                           ),
                         ),
                       // 슬라이더바 (변경 없음)
@@ -254,36 +298,33 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           right: 16,
                           child: Column(
                             children: [
-                              if (duration != Duration.zero)
-                                SliderTheme(
-                                  data: SliderTheme.of(context).copyWith(
-                                    thumbShape: RoundSliderThumbShape(
-                                        enabledThumbRadius: 6),
-                                    overlayShape: RoundSliderOverlayShape(
-                                        overlayRadius: 12),
-                                    trackHeight: 4,
-                                  ),
-                                  child: Slider(
-                                    value: _localSliderValue,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _localSliderValue = value;
-                                        _isDragging = true;
-                                      });
-                                    },
-                                    onChangeEnd: (value) {
-                                      setState(() {
-                                        _isDragging = false;
-                                      });
-                                      final newPosition = Duration(
-                                          milliseconds:
-                                              (value * duration.inMilliseconds)
-                                                  .round());
-                                      widget.controller.player
-                                          .seek(newPosition);
-                                    },
-                                  ),
+                              SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  thumbShape: RoundSliderThumbShape(
+                                      enabledThumbRadius: 6),
+                                  overlayShape: RoundSliderOverlayShape(
+                                      overlayRadius: 12),
+                                  trackHeight: 4,
                                 ),
+                                child: Slider(
+                                  value: _localSliderValue,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _localSliderValue = value;
+                                      _isDragging = true;
+                                    });
+                                  },
+                                  onChangeEnd: (value) {
+                                    setState(() {
+                                      _isDragging = false;
+                                    });
+                                    final newPosition =
+                                        _calculatePositionFromSliderValue(
+                                            value, duration);
+                                    widget.controller.player.seek(newPosition);
+                                  },
+                                ),
+                              ),
                               Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 16),
@@ -293,10 +334,8 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                   children: [
                                     Text(
                                       _formatDuration(_isDragging
-                                          ? Duration(
-                                              milliseconds: (_localSliderValue *
-                                                      duration.inMilliseconds)
-                                                  .round())
+                                          ? _calculatePositionFromSliderValue(
+                                              _localSliderValue, duration)
                                           : position),
                                       style: TextStyle(color: Colors.white),
                                     ),
