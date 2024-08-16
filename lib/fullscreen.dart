@@ -27,10 +27,14 @@ class FullscreenVideoPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 16,
-              left: 16,
+              top: 20,
+              right: 30,
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(
+                  Icons.fullscreen_exit,
+                  color: Colors.white,
+                  size: 40,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),

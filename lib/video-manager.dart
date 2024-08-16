@@ -207,15 +207,12 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   void _seekToLatestSegment() {
     final duration = widget.controller.player.state.duration;
     if (duration > Duration.zero) {
-      // 전체 길이에서 5초를 뺀 지점으로 이동
-      // 5초는 버퍼 시간을 고려한 값으로, 필요에 따라 조정 가능
-      final targetPosition = duration - Duration(seconds: 2);
+      final targetPosition = duration - Duration(seconds: 1);
 
-      // 현재 위치를 확인
       final currentPosition = widget.controller.player.state.position;
 
-      // 현재 위치가 목표 위치보다 10초 이상 뒤쳐져 있을 때만 이동
-      if (duration - currentPosition > Duration(seconds: 3)) {
+      // 현재 위치가 목표 위치보다 2초 이상 뒤쳐져 있을 때만 이동
+      if (duration - currentPosition > Duration(seconds: 2)) {
         widget.controller.player.seek(targetPosition);
       }
     }
@@ -261,7 +258,8 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           top: 16,
                           right: 16,
                           child: IconButton(
-                            icon: Icon(Icons.fullscreen, color: Colors.white),
+                            icon: Icon(Icons.fullscreen,
+                                color: Colors.white, size: 36), // 크기를 1.5배로 증가
                             onPressed: () async {
                               await Navigator.push(
                                 context,
@@ -282,14 +280,16 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                       // 컨트롤 버튼들
                       if (_showControls)
                         Positioned(
-                          bottom: 60, // 아래쪽 패딩 조정
+                          bottom: 60,
                           left: 0,
                           right: 0,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(
-                                icon: Icon(Icons.replay_5, color: Colors.white),
+                                icon: Icon(Icons.replay_5,
+                                    color: Colors.white,
+                                    size: 36), // 크기를 1.5배로 증가
                                 onPressed: () {
                                   final newPosition =
                                       widget.controller.player.state.position -
@@ -298,6 +298,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                   _startHideTimer();
                                 },
                               ),
+                              SizedBox(width: 20), // 간격 추가
                               StreamBuilder<bool>(
                                 stream: widget.controller.player.stream.playing,
                                 initialData:
@@ -308,7 +309,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                     icon: Icon(
                                       playing ? Icons.pause : Icons.play_arrow,
                                       color: Colors.white,
-                                      size: 48,
+                                      size: 72, // 크기를 1.5배로 증가 (48 * 1.5 = 72)
                                     ),
                                     onPressed: () {
                                       if (playing) {
@@ -321,9 +322,11 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                   );
                                 },
                               ),
+                              SizedBox(width: 20), // 간격 추가
                               IconButton(
-                                icon:
-                                    Icon(Icons.forward_5, color: Colors.white),
+                                icon: Icon(Icons.forward_5,
+                                    color: Colors.white,
+                                    size: 36), // 크기를 1.5배로 증가
                                 onPressed: () {
                                   final newPosition =
                                       widget.controller.player.state.position +
@@ -332,8 +335,11 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                   _startHideTimer();
                                 },
                               ),
+                              SizedBox(width: 20), // 간격 추가
                               IconButton(
-                                icon: Icon(Icons.update, color: Colors.white),
+                                icon: Icon(Icons.update,
+                                    color: Colors.white,
+                                    size: 36), // 크기를 1.5배로 증가
                                 onPressed: () {
                                   _seekToLatestSegment();
                                   _startHideTimer();
@@ -342,10 +348,10 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                             ],
                           ),
                         ),
-                      // 슬라이더바
+                      // 슬라이더바 (변경 없음)
                       if (_showControls)
                         Positioned(
-                          bottom: 10, // 아래쪽 패딩 조정
+                          bottom: 10,
                           left: 16,
                           right: 16,
                           child: Column(

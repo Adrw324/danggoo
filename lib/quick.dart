@@ -235,7 +235,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 children: [
                                   if (!isGameStarted)
                                     Padding(
-                                      padding: const EdgeInsets.all(25.0),
+                                      padding: const EdgeInsets.all(60.0),
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
@@ -258,7 +258,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                     ),
                                   if (isGameStarted)
                                     Padding(
-                                      padding: const EdgeInsets.all(25.0),
+                                      padding: const EdgeInsets.all(60.0),
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.redAccent,
@@ -789,12 +789,12 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
 
     double screenHeight = MediaQuery.of(context).size.height;
-    double scoreFontSize = screenHeight / 15;
+    double scoreFontSize = screenHeight / 16;
     double scoreBtnFontSize = screenHeight / 55;
     double playerFontSize = screenHeight / 40;
     return Center(
       child: AspectRatio(
-        aspectRatio: 1,
+        aspectRatio: 1.08,
         child: Container(
           margin: const EdgeInsets.only(left: 10.0, right: 10.0),
           height: MediaQuery.of(context).size.height / 5,
@@ -831,38 +831,42 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                         isHandicap);
                                   });
                                 },
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'PLAYER ${index + 1}',
-                                          style: TextStyle(
-                                              fontSize: playerFontSize,
-                                              color: Colors.black),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '${buttonCounts[index]}',
-                                      style: TextStyle(
-                                          fontSize: scoreFontSize,
-                                          color: Colors.black),
-                                    ),
-                                    if (isHandicap)
-                                      Padding(
-                                        padding: const EdgeInsets.all(0),
-                                        child: Text(
-                                          '${handicabScores[index]}',
-                                          style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: playerFontSize),
-                                        ),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 20),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'PLAYER ${index + 1}',
+                                            style: TextStyle(
+                                                fontSize: playerFontSize,
+                                                color: Colors.black),
+                                          ),
+                                        ],
                                       ),
-                                  ],
+                                      Text(
+                                        '${buttonCounts[index]}',
+                                        style: TextStyle(
+                                            fontSize: scoreFontSize,
+                                            color: Colors.black),
+                                      ),
+                                      if (isHandicap)
+                                        Padding(
+                                          padding: const EdgeInsets.all(0),
+                                          child: Text(
+                                            '${handicabScores[index]}',
+                                            style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: playerFontSize * 1.3),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   shape: RoundedRectangleBorder(
@@ -1112,14 +1116,14 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     }
 
     double screenHeight = MediaQuery.of(context).size.height;
-    double scoreFontSize = screenHeight / 8;
+    double scoreFontSize = screenHeight / 10;
     double scoreBtnFontSize = screenHeight / 50;
     double playerFontSize = screenHeight / 30;
     double buttonSize = screenHeight / 4.5;
 
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.67,
+        aspectRatio: 0.7,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black),
@@ -1167,38 +1171,40 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                           isHandicap);
                                     });
                                   },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'PLAYER ${index + 1}',
-                                            style: TextStyle(
-                                                fontSize: playerFontSize,
-                                                color: Colors.black),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        '${buttonCounts[index]}',
-                                        style: TextStyle(
-                                            fontSize: scoreFontSize,
-                                            color: Colors.black),
-                                      ),
-                                      if (isHandicap)
-                                        Padding(
-                                          padding: const EdgeInsets.all(0),
-                                          child: Text(
-                                            '${handicabScores[index]}',
-                                            style: TextStyle(
-                                                color: Colors.red,
-                                                fontSize: playerFontSize),
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 20), // 위아래 패딩 추가
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'PLAYER ${index + 1}',
+                                          style: TextStyle(
+                                            fontSize: playerFontSize,
+                                            color: Colors.black,
                                           ),
                                         ),
-                                    ],
+                                        SizedBox(height: 2), // 아주 작은 간격
+                                        Text(
+                                          '${buttonCounts[index]}',
+                                          style: TextStyle(
+                                            fontSize: scoreFontSize,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+
+                                        if (isHandicap)
+                                          Text(
+                                            '${handicabScores[index]}',
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: playerFontSize * 1.5,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
@@ -1447,7 +1453,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     double scoreFontSize = screenHeight / 8;
     double scoreBtnFontSize = screenHeight / 20;
     double playerFontSize = screenHeight / 25;
-    double handicapFontSize = screenHeight / 40;
+    double handicapFontSize = playerFontSize * 2;
     double buttonSize = screenHeight / 4.5;
 
     return Center(
@@ -1503,7 +1509,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                               '${handicabScores[index]}',
                               style: TextStyle(
                                   color: Colors.red,
-                                  fontSize: playerFontSize,
+                                  fontSize: handicapFontSize,
                                   fontWeight: FontWeight.w900),
                             ),
                           ),
