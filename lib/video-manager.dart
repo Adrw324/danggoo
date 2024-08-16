@@ -12,9 +12,7 @@ import 'dart:async';
 class VideoManager {
   late final Player player;
   late final VideoController controller;
-  // late FlutterFFmpeg _ffmpeg;
-  // late String documentDirectory;
-  // late String outputPath;
+
   bool _isLoading = true;
 
   VideoManager() {
@@ -24,93 +22,8 @@ class VideoManager {
   }
 
   Future<void> initialize(String inputPath) async {
-    // await _getDirectory();
-    // await _deleteFilesInDirectory(outputPath);
-    // _startConversion(inputPath);
-    // await _waitForSegment();
     await _initializeController(inputPath);
     _isLoading = false;
-  }
-
-  Future<void> _getDirectory() async {
-    // documentDirectory = await _getDocumentDirectory();
-    // outputPath = '$documentDirectory/ffmpeg_output';
-  }
-
-  Future<String> _getDocumentDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
-  Future<void> _deleteFilesInDirectory(String directoryPath) async {
-    try {
-      final directory = Directory(directoryPath);
-      if (await directory.exists()) {
-        await directory.delete(recursive: true);
-        print('Files in $directoryPath deleted successfully.');
-      } else {
-        print('Directory $directoryPath does not exist.');
-      }
-    } catch (e) {
-      print('Error deleting files: $e');
-    }
-  }
-
-  void _startConversion(String inputPath) async {
-    // await Directory(outputPath).create(recursive: true);
-    // _runFFmpeg(inputPath, outputPath);
-  }
-
-  Future<int> _runFFmpeg(String inputPath, String outputPath) async {
-    List<String> arguments = [
-      '-i',
-      inputPath,
-      '-c:v',
-      'libx264',
-      '-an',
-      '-threads',
-      '2',
-      '-preset',
-      'veryfast',
-      '-f',
-      'hls',
-      '-s',
-      '960x540',
-      '-vf',
-      'lenscorrection=cx=0.5:cy=0.5:k1=-0.185:k2=-0.011',
-      '-hls_time',
-      '2',
-      '-crf',
-      '28',
-      '-hls_playlist_type',
-      'event',
-      '-hls_list_size',
-      '0',
-      '-hls_segment_filename',
-      '$outputPath/output_%03d.ts',
-      '$outputPath/output.m3u8',
-    ];
-
-    return 1;
-  }
-
-  Future<void> _waitForSegment() async {
-    while (!(await isSegmentGenerated())) {
-      await Future.delayed(Duration(seconds: 1));
-    }
-  }
-
-  Future<bool> isSegmentGenerated() async {
-    // Directory directory = Directory(outputPath);
-    // if (await directory.exists()) {
-    //   List<FileSystemEntity> files = directory.listSync();
-    //   for (var file in files) {
-    //     if (file is File && file.path.endsWith('.ts')) {
-    //       return true;
-    //     }
-    //   }
-    // }
-    return false;
   }
 
   Future<void> _initializeController(String inputPath) async {
@@ -132,16 +45,7 @@ class VideoManager {
   }
 
   Future<void> dispose() async {
-    // player.dispose();
-    // _isLoading = true;
-    // await _deleteFilesInDirectory(outputPath);
-    // await _ffmpeg.cancel();
-  }
-
-  Future<void> reset() async {
-    // _isLoading = true;
-    // await _deleteFilesInDirectory(outputPath);
-    // await _ffmpeg.cancel();
+    player.dispose();
   }
 }
 
@@ -211,8 +115,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
       final currentPosition = widget.controller.player.state.position;
 
-      // 현재 위치가 목표 위치보다 2초 이상 뒤쳐져 있을 때만 이동
-      if (duration - currentPosition > Duration(seconds: 2)) {
+      if (duration - currentPosition > Duration(seconds: 0)) {
         widget.controller.player.seek(targetPosition);
       }
     }
@@ -225,11 +128,6 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         behavior: HitTestBehavior.opaque,
         onTap: _handleTap,
         onDoubleTap: () {
-          if (widget.controller.player.state.playing) {
-            widget.controller.player.pause();
-          } else {
-            widget.controller.player.play();
-          }
           _startHideTimer();
         },
         child: StreamBuilder<Duration>(
