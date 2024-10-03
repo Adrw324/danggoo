@@ -61,9 +61,11 @@ class CustomVideoControls extends StatefulWidget {
   final VideoController controller;
   final bool isFullscreen;
 
-  const CustomVideoControls(
-      {Key? key, required this.controller, this.isFullscreen = false})
-      : super(key: key);
+  const CustomVideoControls({
+    Key? key,
+    required this.controller,
+    this.isFullscreen = false,
+  }) : super(key: key);
 
   @override
   _CustomVideoControlsState createState() => _CustomVideoControlsState();
@@ -74,6 +76,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   Timer? _hideTimer;
   double _localSliderValue = 0.0;
   bool _isDragging = false;
+  bool _isSeekInProgress = false;
 
   @override
   void initState() {
@@ -120,13 +123,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     final duration = widget.controller.player.state.duration;
     if (duration > Duration.zero) {
       final targetPosition = duration - Duration(seconds: 2);
-      await widget.controller.player.seek(targetPosition);
-
-      if (!widget.controller.player.state.playing) {
-        await widget.controller.player.play();
-      }
-
-      setState(() {});
+      await _performSeek(targetPosition);
     }
   }
 
@@ -137,6 +134,32 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
   Duration _calculatePositionFromSliderValue(double value, Duration duration) {
     return Duration(milliseconds: (value * duration.inMilliseconds).round());
+  }
+
+  Future<void> _performSeek(Duration newPosition) async {
+    if (_isSeekInProgress) return;
+
+    setState(() {
+      _isSeekInProgress = true;
+    });
+
+    try {
+      await widget.controller.player.seek(newPosition);
+      // 세그먼트 로딩을 기다리는 로직
+      await _waitForSegmentLoad();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSeekInProgress = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _waitForSegmentLoad() async {
+    // 여기에 세그먼트 로딩을 기다리는 로직을 구현합니다.
+    // 예를 들어, 일정 시간 동안 대기하거나 특정 이벤트를 기다릴 수 있습니다.
+    await Future.delayed(Duration(milliseconds: 500)); // 예시: 500ms 대기
   }
 
   @override
@@ -158,9 +181,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                 final duration = durationSnapshot.data ?? Duration.zero;
 
                 if (!_isDragging) {
-                  _localSliderValue = duration.inMilliseconds > 0
-                      ? position.inMilliseconds / duration.inMilliseconds
-                      : 0.0;
+                  _localSliderValue = _calculateSliderValue(position, duration);
                 }
 
                 return AnimatedOpacity(
@@ -175,13 +196,14 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           right: 16,
                           child: IconButton(
                             icon: Icon(Icons.fullscreen,
-                                color: Colors.white, size: 50), // 크기를 1.5배로 증가
+                                color: Colors.white, size: 50),
                             onPressed: () async {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => FullscreenVideoPage(
-                                      controller: widget.controller),
+                                    controller: widget.controller,
+                                  ),
                                 ),
                               );
                               if (mounted) {
@@ -210,7 +232,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                     final newPosition = widget
                                             .controller.player.state.position -
                                         Duration(seconds: 5);
-                                    widget.controller.player.seek(newPosition);
+                                    _performSeek(newPosition);
                                     _startHideTimer();
                                   },
                                 ),
@@ -249,7 +271,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                     final newPosition = widget
                                             .controller.player.state.position +
                                         Duration(seconds: 5);
-                                    widget.controller.player.seek(newPosition);
+                                    _performSeek(newPosition);
                                     _startHideTimer();
                                   },
                                 ),
@@ -257,7 +279,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                             ),
                           ),
                         ),
-                      // LIVE 버튼 (별도 배치)
+                      // 'Go to Latest' 버튼
                       if (_showControls)
                         Positioned(
                           bottom: 60,
@@ -290,7 +312,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                             },
                           ),
                         ),
-                      // 슬라이더바 (변경 없음)
+                      // 슬라이더바
                       if (_showControls)
                         Positioned(
                           bottom: 10,
@@ -314,14 +336,14 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                       _isDragging = true;
                                     });
                                   },
-                                  onChangeEnd: (value) {
+                                  onChangeEnd: (value) async {
                                     setState(() {
                                       _isDragging = false;
                                     });
                                     final newPosition =
                                         _calculatePositionFromSliderValue(
                                             value, duration);
-                                    widget.controller.player.seek(newPosition);
+                                    await _performSeek(newPosition);
                                   },
                                 ),
                               ),

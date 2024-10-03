@@ -48,48 +48,9 @@ class _MatchScreenState extends State<MatchScreen> {
   bool _isLoading = true;
 
   Soundpool pool = Soundpool(streamType: StreamType.notification);
-  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   late StreamSubscription _messageSubscription;
-
-  void _showRecordsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final matchData = Provider.of<MatchData>(context, listen: false);
-        return AlertDialog(
-          title: Text('Game Records'),
-          content: Container(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: DataTable(
-                columns: [
-                  DataColumn(label: Text('Player 1')),
-                  DataColumn(label: Text('Inning')),
-                  DataColumn(label: Text('Player 2')),
-                ],
-                rows: matchData.inningHistory
-                    .map((inning) => DataRow(
-                          cells: [
-                            DataCell(Text(inning['player1'].toString())),
-                            DataCell(Text(inning['inning'].toString())),
-                            DataCell(Text(inning['player2'].toString())),
-                          ],
-                        ))
-                    .toList(),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,211 +69,338 @@ class _MatchScreenState extends State<MatchScreen> {
               TextSpan(
                 text: 'NICE ',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               TextSpan(
                 text: 'Q',
                 style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
         ),
       ),
-      body: Row(
-        children: [
-          // Left player section (P1)
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                Expanded(
-                    flex: 5,
-                    child: _buildPlayerSection(isSeatsSwapped ? 1 : 0)),
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _showRecordsDialog,
-                        child: Text('RECORDS', style: TextStyle(fontSize: 16)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Center section (Video and controls)
-          Expanded(
-            flex: 7,
-            child: Column(
-              children: [
-                // Video player
-                Expanded(
-                  flex: 4,
-                  child: _isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Stack(
-                            children: [
-                              Video(
-                                  controller: videoManager.controller,
-                                  controls: NoVideoControls),
-                              CustomVideoControls(
-                                  controller: videoManager.controller),
-                            ],
-                          ),
-                        ),
-                ),
-                // Video controls
-                Expanded(
-                  flex: 1,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        onPressed: () async {
-                          await videoManager.player.seek(
-                              videoManager.player.state.position -
-                                  Duration(seconds: 1));
-                        },
-                        icon: Text("1 SEC SLOWER",
-                            style: TextStyle(fontSize: 20)),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          await videoManager.player.seek(
-                              videoManager.player.state.position +
-                                  Duration(seconds: 1));
-                        },
-                        icon: Text("1 SEC FASTER",
-                            style: TextStyle(fontSize: 20)),
-                      ),
-                      IconButton(
-                        onPressed: _reloadVideo,
-                        icon: Text("RELOAD",
-                            style:
-                                TextStyle(color: Colors.orange, fontSize: 20)),
-                      ),
-                    ],
-                  ),
-                ),
-                // Game info and controls
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Text('Inning: ${matchData.inning}  Time: $formattedTime',
-                          style: TextStyle(fontSize: 24)),
-                      Row(
+      body: GestureDetector(
+        onTap: () {
+          setState(() {
+            isAnyButtonOn = false;
+          });
+        },
+        child: Column(
+          children: [
+            Expanded(
+              flex: 1,
+              child: Row(
+                children: [
+                  if (!isSeatsSwapped) ...[
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(0),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ElevatedButton(
-                            onPressed: !isGameStarted
-                                ? () => startGame(matchData)
-                                : () => finishGame(matchData),
-                            child: Text(!isGameStarted ? 'START' : 'FINISH',
-                                style: TextStyle(fontSize: 24)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: !isGameStarted
-                                  ? Color.fromRGBO(37, 37, 38, 0.973)
-                                  : Colors.redAccent,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 30, vertical: 15),
-                            ),
+                          Text(
+                            'Inning: ${matchData.inning}',
+                            style: TextStyle(fontSize: playtimeFontSize),
                           ),
-                          SizedBox(width: 20),
-                          ElevatedButton(
-                            onPressed: () => matchData.undo(),
-                            child: Text('UNDO', style: TextStyle(fontSize: 24)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 30, vertical: 15),
-                            ),
+                          SizedBox(height: 16),
+                          Text(
+                            formattedTime,
+                            style: TextStyle(fontSize: playtimeFontSize),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Right player section (P2)
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                Expanded(
-                    flex: 5,
-                    child: _buildPlayerSection(isSeatsSwapped ? 0 : 1)),
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(1),
+                    ),
+                  ] else ...[
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(1),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                isSeatsSwapped = !isSeatsSwapped;
-                              });
-                            },
-                            child: Column(
-                              children: [
-                                Text('CHANGE', style: TextStyle(fontSize: 14)),
-                                Text('SEAT', style: TextStyle(fontSize: 14)),
-                              ],
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueGrey,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 10),
-                            ),
+                          Text(
+                            'Inning: ${matchData.inning}',
+                            style: TextStyle(fontSize: playtimeFontSize),
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                matchData.toggleColors();
-                              });
-                            },
-                            child: Column(
-                              children: [
-                                Text('CHANGE', style: TextStyle(fontSize: 14)),
-                                Text('BALL', style: TextStyle(fontSize: 14)),
-                              ],
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueGrey,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 10),
-                            ),
+                          SizedBox(height: 16),
+                          Text(
+                            formattedTime,
+                            style: TextStyle(fontSize: playtimeFontSize),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildPlayerSection(0),
+                    ),
+                  ]
+                ],
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 0, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            DataTable(
+                              columns: [
+                                DataColumn(
+                                    label: Text('Player 1',
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3))),
+                                DataColumn(
+                                    label: Text('Inning',
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3))),
+                                DataColumn(
+                                    label: Text('Player 2',
+                                        style: TextStyle(
+                                            fontSize: playtimeFontSize / 3))),
+                              ],
+                              rows: matchData.inningHistory
+                                  .map(
+                                    (inning) => DataRow(
+                                      cells: [
+                                        DataCell(Text(
+                                          inning['player1'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                        DataCell(Text(
+                                          inning['inning'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                        DataCell(Text(
+                                          inning['player2'].toString(),
+                                          style: TextStyle(
+                                              fontSize: playtimeFontSize / 3),
+                                        )),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Center(
+                                child: _isLoading
+                                    ? Center(child: CircularProgressIndicator())
+                                    : AspectRatio(
+                                        aspectRatio: 16 / 9,
+                                        child: Stack(
+                                          children: [
+                                            Video(
+                                              controller:
+                                                  videoManager.controller,
+                                              controls: NoVideoControls,
+                                            ),
+                                            CustomVideoControls(
+                                                controller:
+                                                    videoManager.controller),
+                                          ],
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      await videoManager.player.seek(
+                                          videoManager.player.state.position -
+                                              Duration(seconds: 1));
+                                    },
+                                    icon: Text("1 SEC SLOWER",
+                                        style: TextStyle(fontSize: 20)),
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      await videoManager.player.seek(
+                                          videoManager.player.state.position +
+                                              Duration(seconds: 1));
+                                    },
+                                    icon: Text("1 SEC FASTER",
+                                        style: TextStyle(fontSize: 20)),
+                                  ),
+                                  IconButton(
+                                    onPressed: _reloadVideo,
+                                    icon: Text(
+                                      "RELOAD",
+                                      style: TextStyle(
+                                          color: Colors.orange, fontSize: 20),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: !isGameStarted
+                                            ? Color.fromRGBO(37, 37, 38, 0.973)
+                                            : Colors.redAccent,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 15),
+                                      ),
+                                      onPressed: !isGameStarted
+                                          ? () => startGame(matchData)
+                                          : () => finishGame(matchData),
+                                      child: Text(
+                                        !isGameStarted ? 'START' : 'FINISH',
+                                        style: TextStyle(
+                                            fontSize: 24, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 15),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          matchData.undo();
+                                        });
+                                      },
+                                      child: Text(
+                                        'UNDO',
+                                        style: TextStyle(
+                                            fontSize: 24, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueGrey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          isSeatsSwapped = !isSeatsSwapped;
+                                        });
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Text('CHANGE',
+                                              style: TextStyle(fontSize: 16)),
+                                          Text('SEAT',
+                                              style: TextStyle(fontSize: 16)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueGrey,
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          final matchData =
+                                              Provider.of<MatchData>(context,
+                                                  listen: false);
+                                          matchData.toggleColors();
+                                        });
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Text('CHANGE',
+                                              style: TextStyle(fontSize: 16)),
+                                          Text('BALL',
+                                              style: TextStyle(fontSize: 16)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,10 +514,6 @@ class _MatchScreenState extends State<MatchScreen> {
         await rootBundle.load("assets/fanfare.mp3").then((ByteData soundData) {
       return pool.load(soundData);
     });
-    soundId[11] =
-        await rootBundle.load("assets/start.mp3").then((ByteData soundData) {
-      return pool.load(soundData);
-    });
   }
 
   void _reloadVideo() {
@@ -496,7 +580,7 @@ class _MatchScreenState extends State<MatchScreen> {
     _finishGameConfirmed(matchData);
   }
 
-  void _startGameConfirmed(MatchData matchData) async {
+  void _startGameConfirmed(MatchData matchData) {
     DateTime today = DateTime.now();
     gameStartTime = DateTime.now();
     matchData.startGame(today, gameStartTime);
@@ -505,8 +589,6 @@ class _MatchScreenState extends State<MatchScreen> {
       'type': 'GameStarted',
       'tableId': Provider.of<GameData>(context, listen: false).tabletNumber,
     });
-
-    await pool.play(soundId[11]);
   }
 
   void finishGame(MatchData matchData) {
