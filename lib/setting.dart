@@ -189,6 +189,45 @@ class SettingScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
+              child: OutlinedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      int newValue = gameData.defaultDelay;
+                      return AlertDialog(
+                        title: Text('Enter New Default Delay (seconds)'),
+                        content: TextFormField(
+                          initialValue: newValue.toString(),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            newValue = int.tryParse(value) ?? 3;
+                          },
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              gameData.updateDefaultDelay(newValue);
+                              Navigator.pop(context);
+                            },
+                            child: Text('Save'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: Text('Change Default Delay'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);

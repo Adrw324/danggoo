@@ -3,22 +3,27 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'fullscreen.dart';
 import 'dart:async';
+import 'global.dart';
 
 class VideoManager {
   late final Player player;
   late final VideoController controller;
   late String _currentPath;
+  late GameData _gameData;
+  Duration _delay = Duration(seconds: 3);
+  bool _isInitialized = false;
 
   bool _isLoading = true;
 
-  VideoManager() {
+  VideoManager(GameData gameData) {
+    _gameData = gameData;
+    _delay = Duration(seconds: _gameData.defaultDelay);
     _initializePlayer();
   }
 
   Future<void> initialize(String inputPath) async {
     _currentPath = inputPath;
     await _initializeController(_currentPath);
-    _isLoading = false;
   }
 
   Future<void> _initializeController(String inputPath) async {
@@ -33,6 +38,49 @@ class VideoManager {
     }
   }
 
+  Future<void> _applyInitialDelay() async {
+    await Future.delayed(Duration(seconds: 1)); // 약간의 지연을 추가
+    final duration = player.state.duration;
+    if (duration > Duration.zero) {
+      final targetPosition = duration - _delay;
+      await player.seek(
+          targetPosition > Duration.zero ? targetPosition : Duration.zero);
+    }
+  }
+
+  Future<void> goToLatest() async {
+    final duration = player.state.duration;
+    if (duration > Duration.zero) {
+      final targetPosition = duration - _delay;
+      await player.seek(
+          targetPosition > Duration.zero ? targetPosition : Duration.zero);
+    }
+  }
+
+  Future<void> adjustDelay(int seconds) async {
+    _delay += Duration(seconds: seconds);
+    if (_delay < Duration.zero) {
+      _delay = Duration.zero;
+    }
+    await goToLatest(); // 딜레이 조정 후 최신 위치로 이동
+  }
+
+  Future<void> play() async {
+    await player.play();
+    await Future.delayed(_delay);
+    await player.seek(Duration.zero);
+  }
+
+  Future<void> pause() async {
+    await player.pause();
+  }
+
+  Future<void> setDelay(Duration newDelay) async {
+    _delay = newDelay;
+  }
+
+  Duration get currentDelay => _delay;
+
   bool get isLoading => _isLoading;
 
   Future<void> seek(Duration duration) async {
@@ -46,6 +94,12 @@ class VideoManager {
   void _initializePlayer() {
     player = Player();
     controller = VideoController(player);
+    player.stream.buffering.listen((isBuffering) {
+      if (!isBuffering && !_isInitialized) {
+        _isInitialized = true;
+        _applyInitialDelay();
+      }
+    });
   }
 
   Future<void> reloadVideo() async {

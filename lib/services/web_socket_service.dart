@@ -149,12 +149,43 @@ class WebSocketService {
 
   void sendMessage(Map<String, dynamic> message) {
     if (_channel != null && !_isClosed) {
-      final jsonMessage = jsonEncode(message);
+      final sanitizedMessage = _sanitizeMessage(message);
+      final jsonMessage = jsonEncode(sanitizedMessage);
       print("Sending message: $jsonMessage");
       _channel!.sink.add(jsonMessage);
     } else {
       print("Cannot send message: channel is null or service is closed");
     }
+  }
+
+  Map<String, dynamic> _sanitizeMessage(Map<String, dynamic> message) {
+    return message.map((key, value) {
+      if (value is double && value.isNaN) {
+        return MapEntry(key, null);
+      }
+      if (value is Map<String, dynamic>) {
+        return MapEntry(key, _sanitizeMessage(value));
+      }
+      if (value is List) {
+        return MapEntry(key, _sanitizeList(value));
+      }
+      return MapEntry(key, value);
+    });
+  }
+
+  List _sanitizeList(List list) {
+    return list.map((item) {
+      if (item is Map<String, dynamic>) {
+        return _sanitizeMessage(item);
+      }
+      if (item is List) {
+        return _sanitizeList(item);
+      }
+      if (item is double && item.isNaN) {
+        return null;
+      }
+      return item;
+    }).toList();
   }
 
   void _sendConnectedStatus(bool isConnected) {

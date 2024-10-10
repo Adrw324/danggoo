@@ -226,17 +226,15 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           children: [
                             IconButton(
                                 onPressed: () async {
-                                  await videoManager.player.seek(
-                                      videoManager.player.state.position -
-                                          Duration(seconds: 1));
+                                  await videoManager.adjustDelay(1);
+                                  setState(() {});
                                 },
                                 icon: Text("1 SEC SLOWER",
                                     style: TextStyle(fontSize: 20))),
                             IconButton(
                               onPressed: () async {
-                                await videoManager.player.seek(
-                                    videoManager.player.state.position +
-                                        Duration(seconds: 1));
+                                await videoManager.adjustDelay(-1);
+                                setState(() {});
                               },
                               icon: Text("1 SEC FASTER",
                                   style: TextStyle(fontSize: 20)),
@@ -248,6 +246,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 style: TextStyle(
                                     color: Colors.orange, fontSize: 20),
                               ),
+                            ),
+                            Text(
+                              "Current Delay: ${videoManager.currentDelay.inSeconds}s",
+                              style: TextStyle(fontSize: 20),
                             ),
                           ],
                         ),
@@ -423,7 +425,9 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
     buttonCounts = List<int>.filled(widget.playerCount, 0);
 
-    videoManager = VideoManager();
+    final gameData = Provider.of<GameData>(context, listen: false);
+
+    videoManager = VideoManager(gameData);
     _initializeVideo();
 
     _settingButtonSound();
@@ -435,6 +439,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     final gameData = Provider.of<GameData>(context, listen: false);
     try {
       await videoManager.initialize(gameData.camera_uri);
+      await videoManager.play(); //
       if (mounted) {
         setState(() {
           _isLoading = false;

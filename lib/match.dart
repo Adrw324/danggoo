@@ -340,8 +340,9 @@ class _MatchScreenState extends State<MatchScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
+    final gameData = Provider.of<GameData>(context, listen: false);
 
-    videoManager = VideoManager();
+    videoManager = VideoManager(gameData);
     _initializeVideo();
 
     _settingButtonSound();

@@ -42,6 +42,7 @@ class GameData extends ChangeNotifier {
   double feePerMinute = 1;
   String manager_uri = 'localhost:5157';
   String camera_uri = '';
+  int defaultDelay = 3;
 
   Future<void> loadGameData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -49,6 +50,7 @@ class GameData extends ChangeNotifier {
     feePerMinute = prefs.getDouble('feePerMinute') ?? 1;
     manager_uri = prefs.getString('managerUri') ?? '192.168.50.217:5157';
     camera_uri = prefs.getString('cameraUri') ?? '';
+    defaultDelay = prefs.getInt('defaultDelay') ?? 3;
     notifyListeners();
   }
 
@@ -58,6 +60,7 @@ class GameData extends ChangeNotifier {
     await prefs.setDouble('feePerMinute', feePerMinute);
     await prefs.setString('managerUri', manager_uri);
     await prefs.setString('cameraUri', camera_uri);
+    await prefs.setInt('defaultDelay', defaultDelay);
   }
 
   void updateTabletNumber(int newTabletNumber) {
@@ -80,6 +83,12 @@ class GameData extends ChangeNotifier {
 
   void updateCameraUri(String newCameraUri) {
     camera_uri = newCameraUri;
+    saveGameData();
+    notifyListeners();
+  }
+
+  void updateDefaultDelay(int newDelay) {
+    defaultDelay = newDelay;
     saveGameData();
     notifyListeners();
   }
