@@ -114,11 +114,13 @@ class VideoManager {
 class CustomVideoControls extends StatefulWidget {
   final VideoController controller;
   final bool isFullscreen;
+  final Duration defaultDelay; // 추가된 부분
 
   const CustomVideoControls({
     Key? key,
     required this.controller,
     this.isFullscreen = false,
+    required this.defaultDelay,
   }) : super(key: key);
 
   @override
@@ -176,8 +178,9 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   Future<void> _seekToLatestSegment() async {
     final duration = widget.controller.player.state.duration;
     if (duration > Duration.zero) {
-      final targetPosition = duration - Duration(seconds: 2);
-      await _performSeek(targetPosition);
+      final targetPosition = duration - widget.defaultDelay;
+      await _performSeek(
+          targetPosition > Duration.zero ? targetPosition : Duration.zero);
     }
   }
 
@@ -216,6 +219,25 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     await Future.delayed(Duration(milliseconds: 500)); // 예시: 500ms 대기
   }
 
+  Widget _buildTimeJumpButton(String label, Duration jumpDuration) {
+    return TextButton(
+      onPressed: () {
+        final newPosition =
+            widget.controller.player.state.position - jumpDuration;
+        _performSeek(newPosition);
+        _startHideTimer();
+      },
+      child: Text(
+        label,
+        style: TextStyle(color: Colors.white, fontSize: 16),
+      ),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size(0, 0),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
@@ -243,7 +265,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                   duration: Duration(milliseconds: 300),
                   child: Stack(
                     children: [
-                      // 풀스크린 버튼
+                      // 풀스크린 버튼 (기존 코드 유지)
                       if (_showControls && !widget.isFullscreen)
                         Positioned(
                           top: 16,
@@ -257,6 +279,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                                 MaterialPageRoute(
                                   builder: (context) => FullscreenVideoPage(
                                     controller: widget.controller,
+                                    defaultDelay: widget.defaultDelay,
                                   ),
                                 ),
                               );
@@ -275,98 +298,86 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                           bottom: 60,
                           left: 0,
                           right: 0,
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.replay_5,
-                                      color: Colors.white, size: 50),
-                                  onPressed: () {
-                                    final newPosition = widget
-                                            .controller.player.state.position -
-                                        Duration(seconds: 5);
-                                    _performSeek(newPosition);
-                                    _startHideTimer();
-                                  },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // 왼쪽에 시간 이동 버튼들
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Row(
+                                  children: [
+                                    // _buildTimeJumpButton(
+                                    //     '5분 전', Duration(minutes: 5)),
+                                    // SizedBox(width: 10),
+                                    // _buildTimeJumpButton(
+                                    //     '3분 전', Duration(minutes: 3)),
+                                    SizedBox(width: 10),
+                                    _buildTimeJumpButton(
+                                        '1 min before', Duration(minutes: 1)),
+                                  ],
                                 ),
-                                SizedBox(width: 20),
-                                StreamBuilder<bool>(
-                                  stream:
-                                      widget.controller.player.stream.playing,
-                                  initialData:
-                                      widget.controller.player.state.playing,
-                                  builder: (context, snapshot) {
-                                    final playing = snapshot.data ?? false;
-                                    return IconButton(
-                                      icon: Icon(
-                                        playing
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        color: Colors.white,
-                                        size: 100,
+                              ),
+                              // 중앙에 재생/일시정지 버튼
+                              StreamBuilder<bool>(
+                                stream: widget.controller.player.stream.playing,
+                                initialData:
+                                    widget.controller.player.state.playing,
+                                builder: (context, snapshot) {
+                                  final playing = snapshot.data ?? false;
+                                  return IconButton(
+                                    icon: Icon(
+                                      playing ? Icons.pause : Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 50,
+                                    ),
+                                    onPressed: () {
+                                      if (playing) {
+                                        widget.controller.player.pause();
+                                      } else {
+                                        widget.controller.player.play();
+                                      }
+                                      _startHideTimer();
+                                    },
+                                  );
+                                },
+                              ),
+                              // 오른쪽에 Go to Latest 버튼 (기존 코드 유지)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: IconButton(
+                                  icon: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Go to",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          height: 1.2,
+                                        ),
                                       ),
-                                      onPressed: () {
-                                        if (playing) {
-                                          widget.controller.player.pause();
-                                        } else {
-                                          widget.controller.player.play();
-                                        }
-                                        _startHideTimer();
-                                      },
-                                    );
-                                  },
-                                ),
-                                SizedBox(width: 20),
-                                IconButton(
-                                  icon: Icon(Icons.forward_5,
-                                      color: Colors.white, size: 50),
+                                      Text(
+                                        "Latest",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   onPressed: () {
-                                    final newPosition = widget
-                                            .controller.player.state.position +
-                                        Duration(seconds: 5);
-                                    _performSeek(newPosition);
+                                    _seekToLatestSegment();
                                     _startHideTimer();
                                   },
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      // 'Go to Latest' 버튼
-                      if (_showControls)
-                        Positioned(
-                          bottom: 60,
-                          right: 16,
-                          child: IconButton(
-                            icon: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "Go to",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                Text(
-                                  "Latest",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            onPressed: () {
-                              _seekToLatestSegment();
-                              _startHideTimer();
-                            },
-                          ),
-                        ),
-                      // 슬라이더바
+                      // 'Go to Latest' 버튼 (기존 코드 유지)
+
+                      // 슬라이더바 (기존 코드 유지)
                       if (_showControls)
                         Positioned(
                           bottom: 10,

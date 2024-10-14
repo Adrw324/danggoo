@@ -171,7 +171,9 @@ class _MatchScreenState extends State<MatchScreen> {
                                   controller: videoManager.controller,
                                   controls: NoVideoControls),
                               CustomVideoControls(
-                                  controller: videoManager.controller),
+                                controller: videoManager.controller,
+                                defaultDelay: videoManager.currentDelay,
+                              ),
                             ],
                           ),
                         ),

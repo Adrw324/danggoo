@@ -4,8 +4,9 @@ import 'video-manager.dart';
 
 class FullscreenVideoPage extends StatefulWidget {
   final VideoController controller;
+  final Duration defaultDelay;
 
-  FullscreenVideoPage({required this.controller});
+  FullscreenVideoPage({required this.controller, required this.defaultDelay});
 
   @override
   _FullscreenVideoPageState createState() => _FullscreenVideoPageState();
@@ -31,9 +32,9 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
                 child: Video(
                   controller: widget.controller,
                   controls: (state) => CustomVideoControls(
-                    controller: widget.controller,
-                    isFullscreen: true,
-                  ),
+                      controller: widget.controller,
+                      isFullscreen: true,
+                      defaultDelay: widget.defaultDelay),
                 ),
               ),
             ),

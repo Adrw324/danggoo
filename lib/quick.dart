@@ -94,6 +94,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
             ],
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _reloadVideo,
+            tooltip: 'Reload Video',
+          ),
+        ],
       ),
       body: GestureDetector(
         onTap: () {
@@ -170,8 +177,11 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                               controls: NoVideoControls,
                                             ),
                                             CustomVideoControls(
-                                                controller:
-                                                    videoManager.controller),
+                                              controller:
+                                                  videoManager.controller,
+                                              defaultDelay:
+                                                  videoManager.currentDelay,
+                                            ),
                                           ]),
                                         ),
                                 ),
@@ -224,32 +234,35 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            IconButton(
-                                onPressed: () async {
-                                  await videoManager.adjustDelay(1);
-                                  setState(() {});
-                                },
-                                icon: Text("1 SEC SLOWER",
-                                    style: TextStyle(fontSize: 20))),
-                            IconButton(
+                            Text(
+                              "CURRENT DELAY: ${videoManager.currentDelay.inSeconds}s",
+                              style: TextStyle(fontSize: 20),
+                            ),
+                            SizedBox(width: 20),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await videoManager.adjustDelay(1);
+                                setState(() {});
+                              },
+                              label: Text(
+                                "1 SEC SLOWER",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                              ),
+                            ),
+                            SizedBox(width: 20),
+                            ElevatedButton.icon(
                               onPressed: () async {
                                 await videoManager.adjustDelay(-1);
                                 setState(() {});
                               },
-                              icon: Text("1 SEC FASTER",
-                                  style: TextStyle(fontSize: 20)),
-                            ),
-                            IconButton(
-                              onPressed: _reloadVideo,
-                              icon: Text(
-                                "RELOAD",
-                                style: TextStyle(
-                                    color: Colors.orange, fontSize: 20),
+                              label: Text("1 SEC FASTER",
+                                  style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
                               ),
-                            ),
-                            Text(
-                              "Current Delay: ${videoManager.currentDelay.inSeconds}s",
-                              style: TextStyle(fontSize: 20),
                             ),
                           ],
                         ),
@@ -538,10 +551,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
         isPlayingStartSound = true;
       });
       await pool.play(soundId[11]);
-      setState(() {
-        isPlayingStartSound = false;
-      });
-      await Future.delayed(Duration(milliseconds: 500));
+      // setState(() {
+      //   isPlayingStartSound = false;
+      // });
+      // await Future.delayed(Duration(milliseconds: 500));
       _startGameConfirmed(gameData);
     }
   }
@@ -722,6 +735,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
 
   Future<void> incrementButtonCountBy(int index, int count) async {
     await _startGameIfNotStarted(Provider.of<GameData>(context, listen: false));
+
     setState(() {
       buttonCounts[index] += count;
     });
@@ -742,6 +756,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
           break;
       }
     }
+
+    setState(() {
+      isPlayingStartSound = false;
+    });
   }
 
   Future<void> decrementButtonCount(int index) async {
