@@ -24,6 +24,7 @@ class VideoManager {
   Future<void> initialize(String inputPath) async {
     _currentPath = inputPath;
     await _initializeController(_currentPath);
+    await _seekToLatestSegment();
   }
 
   Future<void> _initializeController(String inputPath) async {
@@ -35,6 +36,15 @@ class VideoManager {
       print('플레이어 초기화 성공');
     } catch (e) {
       print('플레이어 초기화 실패: $e');
+    }
+  }
+
+  Future<void> _seekToLatestSegment() async {
+    final duration = player.state.duration;
+    if (duration > Duration.zero) {
+      final latestPosition = duration - _delay;
+      await player.seek(
+          latestPosition > Duration.zero ? latestPosition : Duration.zero);
     }
   }
 
@@ -66,9 +76,8 @@ class VideoManager {
   }
 
   Future<void> play() async {
+    await _seekToLatestSegment();
     await player.play();
-    await Future.delayed(_delay);
-    await player.seek(Duration.zero);
   }
 
   Future<void> pause() async {
@@ -77,6 +86,7 @@ class VideoManager {
 
   Future<void> setDelay(Duration newDelay) async {
     _delay = newDelay;
+    await goToLatest();
   }
 
   Duration get currentDelay => _delay;

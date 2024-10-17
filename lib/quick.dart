@@ -49,6 +49,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
   List<int> buttonCounts = [];
   DateTime gameStartTime = DateTime.now();
   bool colorChanged = false;
+  late int _localDelay;
 
   late StreamSubscription _messageSubscription;
   // bool isAnyButtonOn = false;
@@ -235,14 +236,17 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             Text(
-                              "CURRENT DELAY: ${videoManager.currentDelay.inSeconds}s",
+                              "CURRENT DELAY: ${_localDelay}s",
                               style: TextStyle(fontSize: 20),
                             ),
                             SizedBox(width: 20),
                             ElevatedButton.icon(
                               onPressed: () async {
-                                await videoManager.adjustDelay(1);
-                                setState(() {});
+                                setState(() {
+                                  _localDelay += 1;
+                                  videoManager
+                                      .setDelay(Duration(seconds: _localDelay));
+                                });
                               },
                               label: Text(
                                 "1 SEC SLOWER",
@@ -255,8 +259,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                             SizedBox(width: 20),
                             ElevatedButton.icon(
                               onPressed: () async {
-                                await videoManager.adjustDelay(-1);
-                                setState(() {});
+                                setState(() {
+                                  _localDelay = (_localDelay - 1)
+                                      .clamp(0, double.infinity)
+                                      .toInt();
+                                  videoManager
+                                      .setDelay(Duration(seconds: _localDelay));
+                                });
                               },
                               label: Text("1 SEC FASTER",
                                   style: TextStyle(color: Colors.white)),
@@ -444,6 +453,8 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     _initializeVideo();
 
     _settingButtonSound();
+
+    _localDelay = Provider.of<GameData>(context, listen: false).defaultDelay;
 
     print('HANDICAPS ' + '${widget.handicabScores}');
   }
