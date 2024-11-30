@@ -233,13 +233,13 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                       Expanded(
                         flex: 1,
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              "CURRENT DELAY: ${_localDelay}s",
-                              style: TextStyle(fontSize: 20),
-                            ),
-                            SizedBox(width: 20),
+                            // Text(
+                            //   "CURRENT DELAY: ${_localDelay}s",
+                            //   style: TextStyle(fontSize: 20),
+                            // ),
+                            // SizedBox(width: 20),
                             ElevatedButton.icon(
                               onPressed: () async {
                                 setState(() {
@@ -256,7 +256,7 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
                                 backgroundColor: Colors.orange,
                               ),
                             ),
-                            SizedBox(width: 20),
+                            SizedBox(width: 40),
                             ElevatedButton.icon(
                               onPressed: () async {
                                 setState(() {
@@ -619,10 +619,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     await pool.play(soundId[11]);
 
     startTimer();
-    // widget.webSocketService.sendMessage({
-    //   'type': 'GameStarted',
-    //   'tableId': table,
-    // });
+    widget.webSocketService.sendMessage({
+      'type': 'GameStarted',
+      'tableId': table,
+    });
   }
 
   void finishGame(GameData gameData) {
@@ -678,10 +678,10 @@ class _QuickStartScreenState extends State<QuickStartScreen> {
     );
 
     finish();
-    // widget.webSocketService.sendMessage({
-    //   'type': 'GameEnded',
-    //   'tableId': table,
-    // });
+    widget.webSocketService.sendMessage({
+      'type': 'GameEnded',
+      'tableId': table,
+    });
     Navigator.pop(context);
   }
 

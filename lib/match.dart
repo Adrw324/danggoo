@@ -46,6 +46,7 @@ class _MatchScreenState extends State<MatchScreen> {
   late VideoManager videoManager;
 
   bool _isLoading = true;
+  late int _localDelay;
 
   Soundpool pool = Soundpool(streamType: StreamType.notification);
   late List<int> soundId = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -122,6 +123,13 @@ class _MatchScreenState extends State<MatchScreen> {
             ],
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _reloadVideo,
+            tooltip: 'Reload Video',
+          ),
+        ],
       ),
       body: Row(
         children: [
@@ -182,31 +190,40 @@ class _MatchScreenState extends State<MatchScreen> {
                 Expanded(
                   flex: 1,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
+                      ElevatedButton.icon(
                         onPressed: () async {
-                          await videoManager.player.seek(
-                              videoManager.player.state.position -
-                                  Duration(seconds: 1));
+                          setState(() {
+                            _localDelay += 1;
+                            videoManager
+                                .setDelay(Duration(seconds: _localDelay));
+                          });
                         },
-                        icon: Text("1 SEC SLOWER",
-                            style: TextStyle(fontSize: 20)),
+                        label: Text(
+                          "1 SEC SLOWER",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                        ),
                       ),
-                      IconButton(
+                      SizedBox(width: 40),
+                      ElevatedButton.icon(
                         onPressed: () async {
-                          await videoManager.player.seek(
-                              videoManager.player.state.position +
-                                  Duration(seconds: 1));
+                          setState(() {
+                            _localDelay = (_localDelay - 1)
+                                .clamp(0, double.infinity)
+                                .toInt();
+                            videoManager
+                                .setDelay(Duration(seconds: _localDelay));
+                          });
                         },
-                        icon: Text("1 SEC FASTER",
-                            style: TextStyle(fontSize: 20)),
-                      ),
-                      IconButton(
-                        onPressed: _reloadVideo,
-                        icon: Text("RELOAD",
-                            style:
-                                TextStyle(color: Colors.orange, fontSize: 20)),
+                        label: Text("1 SEC FASTER",
+                            style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                        ),
                       ),
                     ],
                   ),
@@ -344,6 +361,8 @@ class _MatchScreenState extends State<MatchScreen> {
     });
     final gameData = Provider.of<GameData>(context, listen: false);
 
+    _localDelay = Provider.of<GameData>(context, listen: false).defaultDelay;
+
     videoManager = VideoManager(gameData);
     _initializeVideo();
 
@@ -354,6 +373,7 @@ class _MatchScreenState extends State<MatchScreen> {
     final gameData = Provider.of<GameData>(context, listen: false);
     try {
       await videoManager.initialize(gameData.camera_uri);
+      await videoManager.play(); // 이 라인 추가 필요
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -361,7 +381,6 @@ class _MatchScreenState extends State<MatchScreen> {
       }
     } catch (e) {
       print('Video initialization error: $e');
-      // 사용자에게 에러 메시지 표시
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('비디오 초기화 중 오류가 발생했습니다.')),
@@ -435,11 +454,14 @@ class _MatchScreenState extends State<MatchScreen> {
     });
   }
 
-  void _reloadVideo() {
+  void _reloadVideo() async {
     setState(() {
       _isLoading = true;
     });
     _initializeVideo();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
